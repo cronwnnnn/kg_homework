@@ -1,0 +1,21 @@
+[project]
+name = "my-project"
+version = "0.1.0"
+description = "单-双折叠翼变体飞行器知识图谱构建系统（基于清华大学郭廷宇博士论文）"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pyahocorasick>=2.0",
+    "spacy>=3.7",
+    "openai>=1.40",
+    "networkx>=3.2",
+    "pyvis>=0.3.2",
+    "tqdm>=4.66",
+    "pandas>=2.1",
+]
+
+[project.optional-dependencies]
+app = [
+    "streamlit>=1.30",
+]
+

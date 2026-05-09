@@ -1,0 +1,16 @@
+==== 知识图谱抽取评估 ====
+预测文件: output/triples_with_meta.csv
+金标文件: gold/silver_triples.csv
+
+预测三元组数: 1234
+金标三元组数: 450
+三元组 TP: 28
+三元组 Precision: 0.0227
+三元组 Recall:    0.0622
+三元组 F1:        0.0333
+
+预测实体数(端点): 283
+金标实体数:       342
+实体 Precision: 0.8127
+实体 Recall:    0.6725
+实体 F1:        0.7360

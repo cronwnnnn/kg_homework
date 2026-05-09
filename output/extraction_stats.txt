@@ -1,0 +1,54 @@
+==== 抽取统计 ====
+段落数: 438
+句子数: 1042
+实体数: 458
+三元组数: 1185
+
+---- 按来源 (合并后) ----
+  trigger+llm: 886
+  llm_discover: 253
+  llm: 42
+  trigger+llm+llm: 2
+  llm+llm_discover: 1
+  llm+trigger+llm: 1
+
+---- 按关系类型 (Top-30) ----
+  discussed_in: 290
+  instance_of: 160
+  has_part: 97
+  reduces: 62
+  improves: 56
+  has_value: 52
+  has_parameter: 41
+  is_a: 30
+  affects: 28
+  develops: 28
+  causes: 26
+  needs: 26
+  verifies: 25
+  used_for: 19
+  made_of: 19
+  connected_to: 16
+  controls: 16
+  uses_method: 14
+  has_configuration: 13
+  generates: 13
+  less_than: 12
+  leads_to: 12
+  has_performance: 11
+  located_at: 11
+  part_of: 11
+  depends_on: 10
+  applied_to: 8
+  solves: 8
+  transforms_to: 8
+  driven_by: 7
+
+---- 按来源 (合并前) ----
+  trigger: 655
+  chapter: 297
+  type: 215
+  cooccur: 209
+  pattern: 54
+  numeric: 42
+  svo: 40
