@@ -2,15 +2,46 @@
 预测文件: output/triples_with_meta.csv
 金标文件: gold/silver_triples.csv
 
-预测三元组数: 1234
-金标三元组数: 450
-三元组 TP: 28
-三元组 Precision: 0.0227
-三元组 Recall:    0.0622
-三元组 F1:        0.0333
+---- 三元组 / 实体对 / 实体 三口径 ----
+严格 F1 (head,rel,tail 全匹配):  P=0.5291  R=0.3118  F1=0.3923  TP=2456  pred=4642  gold=7878
+宽松 F1 (仅 head,tail 匹配):      P=0.6111  R=0.3575  F1=0.4511  TP=2524  pred_pairs=4130  gold_pairs=7061
+实体级 F1 (端点集合):             P=0.6022  R=0.7265  F1=0.6585  TP=887  pred_ent=1473  gold_ent=1221
 
-预测实体数(端点): 283
-金标实体数:       342
-实体 Precision: 0.8127
-实体 Recall:    0.6725
-实体 F1:        0.7360
+---- 关系级 P/R/F1 (银标频次 Top-15) ----
+  关系                       pred   gold    TP   P     R     F1
+  develops                  448    917   216  0.482 0.236 0.316
+  reduces                   385    685   207  0.538 0.302 0.387
+  uses_method               145    626    82  0.566 0.131 0.213
+  generates                  79    504    52  0.658 0.103 0.178
+  instance_of               347    445   347  1.000 0.780 0.876
+  improves                  231    437   120  0.519 0.275 0.359
+  discussed_in              384    415   384  1.000 0.925 0.961
+  controls                  199    409    75  0.377 0.183 0.247
+  has_part                  208    373    72  0.346 0.193 0.248
+  needs                     210    351    83  0.395 0.236 0.296
+  affects                    49    291    28  0.571 0.096 0.165
+  verifies                  172    282    95  0.552 0.337 0.419
+  located_at                191    243    92  0.482 0.379 0.424
+  causes                     97    211    66  0.680 0.313 0.429
+  leads_to                  131    200    63  0.481 0.315 0.381
+  宏平均 F1 (Top-15 关系): 0.3932
+
+---- 实体对相同但关系不同 (Top-12 混淆) ----
+  gold_rel           -> pred_rel            cnt
+  reduces            -> improves            15
+  improves           -> reduces             15
+  drives             -> needs               14
+  equals_to          -> has_value           12
+  reduces            -> leads_to            10
+  develops           -> needs               10
+  causes             -> leads_to            9
+  generates          -> drives              9
+  drives             -> reduces             9
+  verifies           -> develops            9
+  develops           -> improves            9
+  uses_method        -> has_part            8
+
+---- 错误分析样本 ----
+TP (正确): 2456 条
+FP (误抽): 2186 条
+FN (漏抽): 5422 条

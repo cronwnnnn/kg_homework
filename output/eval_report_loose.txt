@@ -1,0 +1,13 @@
+==== 知识图谱抽取评估 ====
+预测文件: output/triples_with_meta.csv
+金标文件: gold/silver_triples_loose.csv  (loose 模式：关系名抹平为 co_occurs_with)
+
+---- 三元组 / 实体对 / 实体 三口径 ----
+严格 F1 (head,rel,tail 全匹配):  P=0.4845  R=0.1068  F1=0.1750  TP=2001  pred=4130  gold=18743
+宽松 F1 (仅 head,tail 匹配):      P=0.4845  R=0.1068  F1=0.1750  TP=2001  pred_pairs=4130  gold_pairs=18743
+实体级 F1 (端点集合):             P=0.6022  R=0.7265  F1=0.6585  TP=887  pred_ent=1473  gold_ent=1221
+
+---- 错误分析样本 ----
+TP (正确): 2001 条
+FP (误抽): 2129 条
+FN (漏抽): 16742 条

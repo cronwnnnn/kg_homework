@@ -1,0 +1,50 @@
+==== 知识图谱抽取评估 ====
+预测文件: output/triples_with_meta.csv
+金标文件: gold/gold_triples.csv
+章节过滤: chapter 包含 '第4章' 的预测三元组；含全局类型分类 (chapter 空 + instance_of/is_a/type_taxonomy)
+关系归一: 已启用 (中文/has → 统一英文关系名；用 --no-normalize-rel 关闭)
+实体同义规约: 已启用 data/aliases.json  (70 个别名 → canonical)
+关系剔除: 评估时排除 ['co_occurs_with', 'discussed_in']
+
+---- 三元组 / 实体对 / 实体 四口径 ----
+严格 F1   (L1 三元组全相等):       P=0.1653  R=0.3265  F1=0.2195  TP=143  pred=865  gold=438
+宽松 F1   (L2 仅 head,tail 一致):  P=0.1834  R=0.3333  F1=0.2366  TP=146  pred_pairs=796  gold_pairs=438
+Partial F1(L3 head/tail 子串匹配): P=0.1850  R=0.3653  F1=0.2456  TP=160  (关系一致 + head/tail 双向子串，min_len=2)
+实体级 F1 (端点集合):             P=0.5582  R=0.5487  F1=0.5534  TP=259  pred_ent=464  gold_ent=472 (从 gold 三元组端点推导)
+
+---- 关系级 P/R/F1 (银标频次 Top-15) ----
+  关系                       pred   gold    TP   P     R     F1
+  instance_of               444    155   119  0.268 0.768 0.397
+  has_value                  12     51     1  0.083 0.020 0.032
+  has_part                   33     42     7  0.212 0.167 0.187
+  causes                     16     25     1  0.062 0.040 0.049
+  uses_method                 6     25     1  0.167 0.040 0.065
+  located_at                 36     23     5  0.139 0.217 0.169
+  used_for                    1     20     0  0.000 0.000 0.000
+  reduces                    40     17     2  0.050 0.118 0.070
+  affects                     5     15     0  0.000 0.000 0.000
+  generates                  12     11     5  0.417 0.455 0.435
+  develops                   38     10     0  0.000 0.000 0.000
+  equivalent_to               0      7     0  0.000 0.000 0.000
+  increases                   0      7     0  0.000 0.000 0.000
+  improves                   35      7     0  0.000 0.000 0.000
+  defined_as                  0      6     0  0.000 0.000 0.000
+  宏平均 F1 (Top-15 关系): 0.0936
+
+---- 实体对相同但关系不同 (Top-12 混淆) ----
+  gold_rel           -> pred_rel            cnt
+  increases          -> improves            1
+  generates          -> less_than           1
+  increases          -> reduces             1
+  has_part           -> develops            1
+  originates_from    -> causes              1
+  generates          -> reduces             1
+
+---- 错误分析样本 ----
+TP (正确): 143 条
+FP (误抽): 722 条
+FN (漏抽): 295 条
+
+---- 章节评估注意事项 ----
+- pred 仅保留 chapter 含 '第4章' 的三元组（含 chapter 空但关系是全局类型分类的行）。
+- 实体级 F1 已强制从过滤后的 gold 三元组端点推导参照集合。

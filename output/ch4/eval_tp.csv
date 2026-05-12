@@ -1,0 +1,10 @@
+﻿head,relation,tail
+Laitone,applied_to,串列双翼布局
+RANS方法,uses_method,SST湍流模型
+副翼偏转,generates,俯仰力矩
+嵌套网格,has_part,活动机翼
+端板效应,reduces,翼尖涡
+背景网格,has_part,固定机翼
+背景网格,has_part,机身
+连杆,causes,流动分离
+连杆,generates,端板效应

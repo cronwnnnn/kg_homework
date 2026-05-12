@@ -1,54 +1,59 @@
 ==== 抽取统计 ====
 段落数: 438
 句子数: 1042
-实体数: 458
-三元组数: 1185
+实体数: 527
+三元组数: 2693
 
 ---- 按来源 (合并后) ----
-  trigger+llm: 886
-  llm_discover: 253
-  llm: 42
-  trigger+llm+llm: 2
-  llm+llm_discover: 1
-  llm+trigger+llm: 1
+  trigger: 1253
+  chapter: 474
+  type: 454
+  cooccur: 361
+  pattern: 89
+  numeric: 48
+  trigger+pattern: 6
+  trigger+pattern+pattern: 4
+  pattern+cooccur: 2
+  trigger+pattern+pattern+pattern: 1
+  pattern+cooccur+cooccur: 1
 
 ---- 按关系类型 (Top-30) ----
-  discussed_in: 290
-  instance_of: 160
-  has_part: 97
-  reduces: 62
-  improves: 56
-  has_value: 52
-  has_parameter: 41
-  is_a: 30
-  affects: 28
-  develops: 28
-  causes: 26
-  needs: 26
-  verifies: 25
-  used_for: 19
-  made_of: 19
-  connected_to: 16
-  controls: 16
-  uses_method: 14
-  has_configuration: 13
-  generates: 13
-  less_than: 12
-  leads_to: 12
-  has_performance: 11
-  located_at: 11
-  part_of: 11
-  depends_on: 10
-  applied_to: 8
-  solves: 8
-  transforms_to: 8
-  driven_by: 7
+  discussed_in: 474
+  instance_of: 454
+  has_part: 156
+  develops: 151
+  reduces: 146
+  has_parameter: 132
+  improves: 114
+  located_at: 94
+  has_configuration: 78
+  needs: 74
+  verifies: 62
+  controls: 58
+  leads_to: 55
+  used_for: 48
+  drives: 48
+  has_value: 46
+  equals_to: 44
+  less_than: 44
+  uses_method: 43
+  connected_to: 41
+  causes: 38
+  applied_to: 37
+  greater_than: 34
+  generates: 28
+  transforms_to: 24
+  satisfies: 20
+  depends_on: 19
+  manufactures: 18
+  implements: 18
+  combines_with: 18
 
 ---- 按来源 (合并前) ----
-  trigger: 655
-  chapter: 297
-  type: 215
-  cooccur: 209
-  pattern: 54
-  numeric: 42
-  svo: 40
+  trigger: 1520
+  cooccur: 674
+  chapter: 474
+  type: 454
+  pattern: 124
+  numeric: 57
+  svo: 0
