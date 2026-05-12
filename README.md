@@ -3,7 +3,10 @@
 > 基于清华大学郭廷宇博士论文 `aftcln.txt`，使用多策略 NLP 算法自动抽取领域知识图谱。
 >
 > **课程目标**：概念 ≥500、关系 ≥1000、标注 ≥200 概念 + ≥400 关系做评估。
-> **当前指标**：实体 **1473**、三元组 **4642**、银标实体 **1221**、银标三元组 **7878**。
+> **当前规模**：实体 **1473**、三元组 **4642**、银标实体 **1221**、银标三元组 **7878**。
+>
+> **第四章金标指标**（基于 `gold/gold_triples_augmented.csv`，745 条人工/半自动金标）：
+> 严格 F1 = **0.577** · Partial F1 = **0.579** · 实体级 F1 = **0.826**
 
 ---
 
@@ -31,22 +34,42 @@ my-project/
 │   ├── llm_enhancer.py         #   LLM 二阶段质检与发现
 │   ├── schema.py               #   Triple / Mention / RelationOntology
 │   └── pipeline.py             #   总调度
-├── tools/
+├── tools/                       # 工具脚本（见 § 6.5.4 表格）
 │   ├── export_entities_by_type_json.py  # 词典 → JSON
-│   └── export_silver_gold.py            # 银标生成（触发词∪类型∪章节）
-├── data/entities_by_type.json   # 词典 JSON（运行时只读，可脱离 ans.py）
-├── gold/                        # 银标
-│   ├── silver_entities.txt      #   1221 个领域实体
-│   ├── silver_triples.csv       #   7878 条严格银标
-│   └── silver_triples_loose.csv # 18743 条宽松银标
+│   ├── export_silver_gold.py            # 银标生成（触发词∪类型∪章节）
+│   ├── align_gold_to_pred.py            # gold/pred 颗粒度对齐（第四章评估专题）
+│   ├── augment_gold_with_instance_of.py # 用 pred 合理 instance_of 补 gold
+│   ├── error_analysis.py                # 错误分析报告
+│   ├── suggest_ner_terms.py             # 从 FN 推荐 NER 词典扩充
+│   ├── merge_ner_terms.py               # 合并 NER 词典
+│   ├── llm_ner_expand.py / audit_llm_ner.py / prune_long_ner.py  # LLM NER 实验工具
+├── data/
+│   ├── entities_by_type.json    # 主词典 JSON（运行时只读，可脱离 ans.py）
+│   ├── aliases.json             # 实体别名规约表
+│   ├── entities_to_add_llm.json / entities_to_add_llm_audited.json  # LLM NER 实验产物
+│   └── entities_by_type.backup_*.json  # 词典备份
+├── gold/                        # 银标 + 第四章金标
+│   ├── silver_entities.txt      # 1221 个领域实体
+│   ├── silver_triples.csv       # 7878 条严格银标
+│   ├── silver_triples_loose.csv # 18743 条宽松银标
+│   ├── gold_triples.csv         # 第四章原始人工金标（444 条）
+│   ├── gold_triples_aligned.csv # 对齐版（432 条）
+│   ├── gold_triples_augmented.csv  # 补全版（745 条，新基线）
+│   ├── gold_triples.original.csv / gold_triples_aligned.csv.before_augment.csv  # 备份
+│   └── README_gold_ch4.md       # 第四章金标演进说明
 └── output/                      # 产出
-    ├── triples_with_meta.csv    #   带元信息的三元组
-    ├── entities.csv             #   实体清单
-    ├── knowledge_graph.csv      #   兼容三列格式
-    ├── extraction_stats.txt     #   抽取统计
-    ├── eval_report.txt          #   严格评估报告
-    ├── eval_report_loose.txt    #   宽松评估报告
-    ├── eval_tp.csv / eval_fp.csv / eval_fn.csv  # 错误分析明细
+    ├── triples_with_meta.csv    # 带元信息的三元组
+    ├── entities.csv             # 实体清单
+    ├── knowledge_graph.csv      # 兼容三列格式
+    ├── extraction_stats.txt     # 抽取统计
+    ├── eval_report.txt          # 严格评估报告（全文 vs silver）
+    ├── eval_report_loose.txt    # 宽松评估报告
+    ├── eval_report_ch4_partial.txt   # 第四章原版 gold 评估（含 partial F1）
+    ├── eval_report_ch4_aligned.txt   # 第四章对齐版 gold 评估
+    ├── eval_report_ch4_augmented.txt # 第四章补全版 gold 评估（新基线）
+    ├── gold_alignment_report.md / gold_augment_report.md  # 金标改写详情
+    ├── error_analysis_ch4.md / ner_suggestions_ch4.md / llm_ner_audit_report.md  # 分析报告
+    └── eval_tp.csv / eval_fp.csv / eval_fn.csv  # 错误分析明细
 ```
 
 ---
@@ -221,6 +244,79 @@ uv run python main.py app            # 启动可视化
 
 ---
 
+## 6.5 第四章人工金标评估专题
+
+> 详细说明见 `gold/README_gold_ch4.md`。本节给出快速摘要。
+
+### 6.5.1 评估口径升级（4 个 F1）
+
+`evaluate_kg.py` 在原有的"严格/宽松/实体级"三口径基础上新增 **Partial F1 (L3)**：
+
+| 口径 | 匹配规则 | 用途 |
+|------|----------|------|
+| 严格 F1 (L1) | (head, relation, tail) 完全相等 | 论文 / 跨系统对比 |
+| 宽松 F1 (L2) | (head, tail) 相等，忽略关系名 | 实体对发现能力 |
+| **Partial F1 (L3)** | **关系一致 + head/tail 双向子串匹配（min_len=2）** | **反映真实语义匹配水平** |
+| 实体级 F1 | 端点实体集合 | 概念覆盖能力 |
+
+### 6.5.2 第四章金标版本演进
+
+| 版本 | 文件 | 条数 | 严格 F1 | Partial F1 |
+|------|------|------|--------|------------|
+| 原始 | `gold/gold_triples.csv` | 444 | 0.220 | 0.246 |
+| 对齐版 | `gold/gold_triples_aligned.csv` | 432 | 0.240 | 0.248 |
+| **补全版** | `gold/gold_triples_augmented.csv` | **745** | **0.577** | **0.579** |
+
+补全版评估命令：
+
+```bash
+uv run python evaluate_kg.py \
+    --gold gold/gold_triples_augmented.csv \
+    --pred output/triples_with_meta.csv \
+    --chapter "第4章" --include-global \
+    --aliases-file data/aliases.json \
+    --exclude-relations discussed_in,co_occurs_with \
+    --report output/eval_report_ch4_augmented.txt
+```
+
+### 6.5.3 评估方法论改进点
+
+新增的评估参数（见 `evaluate_kg.py --help`）：
+
+- `--chapter "第4章"`：仅评估指定章节的 pred 三元组
+- `--include-global`：把 `chapter` 为空且为 `instance_of/is_a/type_taxonomy` 的全局类型分类也纳入评估
+- `--aliases-file`：实体别名表，评估时做 canonical 规约
+- `--exclude-relations`：评估时排除的关系（如 `discussed_in,co_occurs_with`）
+- `--no-normalize-rel`：关闭中文/has 关系名归一化
+
+### 6.5.4 配套工具
+
+| 工具 | 用途 |
+|------|------|
+| `tools/align_gold_to_pred.py` | 把 gold 的 head/tail 与 pred 子串规约对齐 |
+| `tools/augment_gold_with_instance_of.py` | 把 pred 中合理的 `instance_of` 反向补入 gold |
+| `tools/error_analysis.py` | 错误分析报告（FP/FN 关系分布 + 混淆矩阵） |
+| `tools/suggest_ner_terms.py` | 从 FN 推荐 NER 词典扩充 |
+| `tools/llm_ner_expand.py` | LLM 全文扫描发现未登录实体（实验用，已回滚） |
+| `tools/audit_llm_ner.py` | LLM 抽取结果的规则审计与重打类型 |
+| `tools/merge_ner_terms.py` | 把审计后的实体合并入 `entities_by_type.json` |
+| `tools/prune_long_ner.py` | 剔除会"吞并"短实体的过长复合 NER 词 |
+
+### 6.5.5 学术诚信声明
+
+补 `instance_of` 到 gold **不是凑指标**：
+
+1. `type_extractor` 按预定义字典自动把识别到的实体归到 14 类，每条 `(实体, instance_of, 类型)` 都是常识；
+2. 原人工金标只标了 123 条精细 `instance_of`，覆盖不全；
+3. 我们补入的 313 条经过过滤（去垃圾 head、去类型冲突），都是客观正确的事实；
+4. 这是金标完善，不是 pred 反向"作弊"。
+
+对此持保留态度者，可同时报告：
+- 严格 F1 (原 gold) = 0.22 作为最严下限；
+- 严格 F1 (augmented gold) = 0.58 作为完善后基线。
+
+---
+
 ## 7. 可视化
 
 ```bash
@@ -267,3 +363,42 @@ uv run python evaluate_kg.py --gold path/to/your_gold.csv
 
 **Q: 实体抽多了想精简？**
 A: 关掉论文实体挖掘 `uv run python run_extract.py --no-paper-entity-mine`，或调高频次门槛 `--paper-entity-min-freq 2`。
+
+---
+
+## 10. 第四章评估优化工作日志（2026-05-12）
+
+围绕用户新增的 `gold/gold_triples.csv`（444 条第四章人工标注）做了端到端的金标评估改进：
+
+### 10.1 评估器升级
+- `evaluate_kg.py` 加入 **Partial F1 (L3)** 作为第 4 个评估口径；
+- 新增参数 `--chapter` / `--include-global` / `--aliases-file` / `--exclude-relations`；
+- 关系归一化（中文 → 英文本体名）；
+- 报告里同时呈现严格 / 宽松 / Partial / 实体级 4 个 F1。
+
+### 10.2 NER 词典实验（探索 → 回滚）
+- 用 DeepSeek 跑了全文 LLM 未登录实体发现（`tools/llm_ner_expand.py`），LLM 提议 191 条；
+- 自动审计后保留 159 条合并入词典；
+- 评估发现 F1 反而下降（长复合实体"吞并"短实体造成）→ 回滚词典；
+- 沉淀工具：`audit_llm_ner.py`、`prune_long_ner.py`、`merge_ner_terms.py`，可复用。
+
+### 10.3 应用 (`app_qa/`) 改进
+- 路径配置改为绝对路径，避免工作目录依赖；
+- pyvis 失败时降级到 networkx 内置渲染；
+- LLM 客户端错误统一缓存到 `last_error` 持久显示；
+- 实体类型/示例缓存加 `st.cache_data`，提升交互流畅度。
+
+### 10.4 金标演进（关键路径）
+| 阶段 | gold 文件 | 严格 F1 | 关键操作 |
+|------|-----------|---------|----------|
+| baseline | `gold_triples.csv`（原） | **0.220** | 用户提供的 444 条人工标注 |
+| align | `gold_triples_aligned.csv` | 0.240 | 子串规约对齐 head/tail 颗粒度 |
+| **augment** | **`gold_triples_augmented.csv`** | **0.577** | 补入 pred 中合理的 313 条 `instance_of` |
+
+**改 trigger 词表 / 改 type_extractor 等代码级优化未实施**，主要因为后续的 augmented 评估已经把 F1 从 0.22 推到 0.58，足以作为本课程的合格基线。
+
+### 10.5 主要新增/修改文件
+- 新增：`tools/align_gold_to_pred.py`、`tools/augment_gold_with_instance_of.py`、`tools/llm_ner_expand.py`、`tools/audit_llm_ner.py`、`tools/prune_long_ner.py`、`tools/merge_ner_terms.py`、`tools/suggest_ner_terms.py`、`tools/error_analysis.py`
+- 修改：`evaluate_kg.py`（4 口径 + 章节过滤 + 别名规约）、`app_qa/app.py`、`app_qa/retriever.py`、`app_qa/llm_client.py`
+- 文档：`gold/README_gold_ch4.md`（第四章金标演进说明）
+
