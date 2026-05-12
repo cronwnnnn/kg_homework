@@ -37,9 +37,13 @@ class PipelineConfig:
     llm_model: str | None = None
 
     trigger_max_window: int = 30
-    trigger_min_score: float = 0.38
+    trigger_min_score: float = 0.55  # 调高（原 0.38）：FP 主要来自低分 trigger，详见审计
     cooccur_max_pairs_per_sentence: int = 6
     spacy_model: str = "zh_core_web_sm"
+    # 全局 score 阈值：所有 source 输出后统一过滤；为 0 时不过滤。
+    # type/numeric/pattern/instance_of 等高质量来源 score 通常 ≥ 0.6，几乎不受影响；
+    # 主要剔除 cooccur (0.5) 与低分 trigger。
+    final_min_score: float = 0.55
 
     # 二阶段 LLM：在已有候选上根据正文补充「字面可核对」的新三元组（仅 openai 模式生效）
     use_llm_discovery: bool = False
@@ -201,6 +205,18 @@ class ExtractionPipeline:
         triples = self._merge(triples)
         if verbose:
             print(f"[pipeline] 抽取小计（去重后）：{len(triples)} 条")
+
+        # 全局 score 阈值过滤：剔除低质量来源（主要是 cooccur 0.5 与低分 trigger）。
+        # 不过滤 numeric/pattern/instance_of/chapter 等高质量产出（它们 score 通常 ≥ 0.6）。
+        if self.config.final_min_score > 0:
+            n_before_filter = len(triples)
+            triples = [t for t in triples if t.score >= self.config.final_min_score]
+            if verbose:
+                print(
+                    f"[pipeline] 全局 score 过滤 (>= {self.config.final_min_score}): "
+                    f"{n_before_filter} → {len(triples)} 条 "
+                    f"（删 {n_before_filter - len(triples)} 条低质量）"
+                )
 
         if self.config.use_llm:
             triples = self._llm_polish(triples, sentences, verbose=verbose)

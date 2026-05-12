@@ -1,14 +1,13 @@
 ==== 抽取统计 ====
 段落数: 438
 句子数: 1042
-实体数: 527
-三元组数: 2693
+实体数: 492
+三元组数: 1297
 
 ---- 按来源 (合并后) ----
-  trigger: 1253
   chapter: 474
-  type: 454
-  cooccur: 361
+  type: 434
+  trigger: 238
   pattern: 89
   numeric: 48
   trigger+pattern: 6
@@ -19,41 +18,41 @@
 
 ---- 按关系类型 (Top-30) ----
   discussed_in: 474
-  instance_of: 454
-  has_part: 156
-  develops: 151
-  reduces: 146
-  has_parameter: 132
-  improves: 114
-  located_at: 94
-  has_configuration: 78
-  needs: 74
-  verifies: 62
-  controls: 58
-  leads_to: 55
-  used_for: 48
-  drives: 48
+  instance_of: 434
+  has_part: 47
   has_value: 46
-  equals_to: 44
-  less_than: 44
-  uses_method: 43
-  connected_to: 41
-  causes: 38
-  applied_to: 37
-  greater_than: 34
-  generates: 28
-  transforms_to: 24
-  satisfies: 20
-  depends_on: 19
-  manufactures: 18
-  implements: 18
-  combines_with: 18
+  located_at: 37
+  uses_method: 30
+  generates: 24
+  used_for: 22
+  connected_to: 16
+  needs: 16
+  develops: 15
+  improves: 12
+  satisfies: 12
+  verifies: 11
+  manufactures: 11
+  controls: 11
+  reduces: 10
+  drives: 9
+  depends_on: 8
+  affects: 7
+  implements: 7
+  transforms_to: 6
+  provides: 6
+  causes: 6
+  solves: 4
+  combines_with: 4
+  leads_to: 3
+  driven_by: 2
+  less_than_value: 2
+  greater_than: 1
 
 ---- 按来源 (合并前) ----
-  trigger: 1520
+  trigger: 950
   cooccur: 674
   chapter: 474
-  type: 454
+  type: 434
   pattern: 124
   numeric: 57
   svo: 0

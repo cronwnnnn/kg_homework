@@ -1,9 +1,6 @@
 ﻿head,relation,tail
-25%弦长,instance_of,设计参数
-3D打印树脂,instance_of,材料
 45%弦长,instance_of,设计参数
 ACADO,instance_of,技术
-Addoms,instance_of,人物
 Aquila,instance_of,飞行器
 B-1,instance_of,飞行器
 CFD,instance_of,技术
@@ -12,7 +9,6 @@ F-111,instance_of,飞行器
 F-14,instance_of,飞行器
 Facebook公司,instance_of,组织机构
 GPS,instance_of,结构部件
-Laitone,applied_to,串列双翼布局
 Laitone,instance_of,人物
 MQ-9,instance_of,飞行器
 NASA,instance_of,组织机构
@@ -43,20 +39,16 @@ Z字形折叠翼,instance_of,机翼构型
 上机翼,located_at,下机翼斜前方
 上机翼,located_at,下机翼斜后方
 上机翼,located_at,下机翼正上方
-上机翼上反,instance_of,概念
-上机翼在前,instance_of,概念
 上翼,instance_of,结构部件
 下单翼,instance_of,机翼构型
 下机翼,instance_of,机翼构型
 下机翼上表面,instance_of,概念
 下机翼前方,instance_of,概念
 下机翼后方,instance_of,概念
-下机翼在前,instance_of,概念
 下机翼斜前方,instance_of,概念
 下机翼斜后方,instance_of,概念
 下机翼正上方,instance_of,概念
 下翼,instance_of,结构部件
-下降,instance_of,飞行阶段
 中机身,instance_of,结构部件
 串列双翼布局,instance_of,机翼构型
 主梁,instance_of,结构部件
@@ -96,7 +88,6 @@ Z字形折叠翼,instance_of,机翼构型
 副翼偏转,generates,俯仰力矩
 副翼偏转,generates,额外俯仰力矩
 副翼偏转,generates,额外气动力
-副翼偏转,has_value,3200N·m
 副翼偏转,instance_of,控制方法
 副翼偏转角度,instance_of,设计参数
 副翼差动,instance_of,控制方法
@@ -141,7 +132,6 @@ Z字形折叠翼,instance_of,机翼构型
 双翼布局,has_part,上翼
 双翼布局,has_part,下翼
 双翼布局,instance_of,机翼构型
-双翼机,has_part,支柱
 双翼机,instance_of,机翼构型
 双翼机,instance_of,飞行器
 双翼气动性能,instance_of,气动概念
@@ -181,7 +171,6 @@ Z字形折叠翼,instance_of,机翼构型
 失效安全性,instance_of,性能指标
 失效安全性,instance_of,概念
 失速,instance_of,气动概念
-失速提前,instance_of,气动概念
 失速攻角,instance_of,设计参数
 失速速度,instance_of,气动概念
 失速速度,instance_of,设计参数
@@ -197,7 +186,6 @@ Z字形折叠翼,instance_of,机翼构型
 展向流动,instance_of,气动概念
 展开变体,instance_of,概念
 展弦比,instance_of,设计参数
-展弦比,reduces,诱导阻力系数
 嵌套网格,has_part,活动机翼
 嵌套网格,instance_of,技术
 巡航,instance_of,飞行阶段
@@ -265,7 +253,6 @@ Z字形折叠翼,instance_of,机翼构型
 木材,instance_of,材料
 机头,instance_of,结构部件
 机翼,instance_of,概念
-机翼,leads_to,失速提前
 机翼前缘,instance_of,气动概念
 机翼厚度,instance_of,设计参数
 机翼受力,instance_of,概念
@@ -274,10 +261,8 @@ Z字形折叠翼,instance_of,机翼构型
 机翼油箱,instance_of,结构部件
 机翼结构设计,instance_of,概念
 机翼结构重量,instance_of,设计参数
-机翼负载,instance_of,概念
 机翼面积,instance_of,设计参数
 机身,instance_of,结构部件
-机身,leads_to,连杆
 机身根部,instance_of,结构部件
 机身油箱,instance_of,结构部件
 机身顶部,instance_of,概念
@@ -291,7 +276,6 @@ Z字形折叠翼,instance_of,机翼构型
 梢根比,instance_of,设计参数
 气动中心,instance_of,气动概念
 气动优化,instance_of,技术
-气动力增量中心,instance_of,概念
 气动力矩,instance_of,气动概念
 气动力驱动,instance_of,控制方法
 气动力驱动变体,instance_of,技术
@@ -315,10 +299,8 @@ Z字形折叠翼,instance_of,机翼构型
 滚转力矩,instance_of,设计参数
 滚转扰动力矩,instance_of,设计参数
 滚转控制,instance_of,气动概念
-激波阻力,instance_of,气动概念
 燃油重量,instance_of,设计参数
 物理模型,instance_of,技术
-玻璃纤维复合材料,instance_of,材料
 理论,instance_of,技术
 电推杆,instance_of,结构部件
 电机,instance_of,结构部件
@@ -338,8 +320,6 @@ Z字形折叠翼,instance_of,机翼构型
 突风过载,instance_of,设计参数
 端板效应,instance_of,气动概念
 端板效应,reduces,翼尖涡
-等效原则,develops,双翼
-等效原则,instance_of,概念
 等效攻角变化,instance_of,概念
 纵墙,instance_of,结构部件
 线性区,instance_of,气动概念
@@ -354,8 +334,6 @@ Z字形折叠翼,instance_of,机翼构型
 美国陆军,instance_of,组织机构
 翼台,instance_of,结构部件
 翼尖,instance_of,结构部件
-翼尖处,instance_of,结构部件
-翼尖失速,instance_of,气动概念
 翼尖涡,instance_of,气动概念
 翼尖涡流,instance_of,气动概念
 翼尖负担转角,instance_of,结构部件
@@ -389,7 +367,6 @@ Z字形折叠翼,instance_of,机翼构型
 西风,instance_of,飞行器
 角度传感器,instance_of,结构部件
 解耦控制方案,instance_of,概念
-设计准则,instance_of,概念
 设计参数,instance_of,概念
 设计规律,instance_of,概念
 试飞,instance_of,技术
@@ -409,13 +386,11 @@ Z字形折叠翼,instance_of,机翼构型
 转动惯量,instance_of,设计参数
 转轴,instance_of,结构部件
 轴承,instance_of,结构部件
-载荷分布,instance_of,气动概念
 过载,instance_of,设计参数
 过载包线,instance_of,概念
 过载能力,instance_of,性能指标
 进气道,instance_of,结构部件
 连接翼布局,instance_of,机翼构型
-连杆,causes,流动分离
 连杆,generates,端板效应
 连杆,instance_of,结构部件
 连杆与活动机翼连接点,instance_of,概念
@@ -447,7 +422,6 @@ Z字形折叠翼,instance_of,机翼构型
 雷诺数,instance_of,设计参数
 非定常效应,instance_of,气动概念
 非定常气动力,instance_of,气动概念
-非定常气动力,originates_from,等效攻角变化
 非定常计算,instance_of,技术
 非线性区,instance_of,气动概念
 额外俯仰力矩,instance_of,气动概念

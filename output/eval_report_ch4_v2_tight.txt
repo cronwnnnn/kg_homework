@@ -1,0 +1,45 @@
+==== 知识图谱抽取评估 ====
+预测文件: output/triples_with_meta.csv
+金标文件: gold/gold_triples_augmented.csv
+章节过滤: chapter 包含 '第4章' 的预测三元组；含全局类型分类 (chapter 空 + instance_of/is_a/type_taxonomy)
+关系归一: 已启用 (中文/has → 统一英文关系名；用 --no-normalize-rel 关闭)
+实体同义规约: 已启用 data/aliases.json  (70 个别名 → canonical)
+关系剔除: 评估时排除 ['co_occurs_with', 'discussed_in']
+
+---- 三元组 / 实体对 / 实体 四口径 ----
+严格 F1   (L1 三元组全相等):       P=0.8447  R=0.5926  F1=0.6966  TP=435  pred=515  gold=734
+宽松 F1   (L2 仅 head,tail 一致):  P=0.8463  R=0.5935  F1=0.6977  TP=435  pred_pairs=514  gold_pairs=733
+Partial F1(L3 head/tail 子串匹配): P=0.8466  R=0.5940  F1=0.6982  TP=436  (关系一致 + head/tail 双向子串，min_len=2)
+实体级 F1 (端点集合):             P=0.9932  R=0.6769  F1=0.8051  TP=440  pred_ent=443  gold_ent=650 (从 gold 三元组端点推导)
+
+---- 关系级 P/R/F1 (银标频次 Top-15) ----
+  关系                       pred   gold    TP   P     R     F1
+  instance_of               425    454   409  0.962 0.901 0.931
+  has_value                  12     51     5  0.417 0.098 0.159
+  has_part                   15     42     7  0.467 0.167 0.246
+  causes                      2     25     0  0.000 0.000 0.000
+  uses_method                 3     25     1  0.333 0.040 0.071
+  located_at                 16     23     6  0.375 0.261 0.308
+  reduces                     2     17     1  0.500 0.059 0.105
+  used_for                    1     17     0  0.000 0.000 0.000
+  affects                     2     15     0  0.000 0.000 0.000
+  generates                  11     11     5  0.455 0.455 0.455
+  develops                    2     10     0  0.000 0.000 0.000
+  improves                    1      7     0  0.000 0.000 0.000
+  equivalent_to               0      7     0  0.000 0.000 0.000
+  increases                   0      7     0  0.000 0.000 0.000
+  defined_as                  0      6     0  0.000 0.000 0.000
+  宏平均 F1 (Top-15 关系): 0.1516
+
+---- 实体对相同但关系不同 (Top-12 混淆) ----
+  gold_rel           -> pred_rel            cnt
+  located_at         -> connected_to        1
+
+---- 错误分析样本 ----
+TP (正确): 435 条
+FP (误抽): 80 条
+FN (漏抽): 299 条
+
+---- 章节评估注意事项 ----
+- pred 仅保留 chapter 含 '第4章' 的三元组（含 chapter 空但关系是全局类型分类的行）。
+- 实体级 F1 已强制从过滤后的 gold 三元组端点推导参照集合。

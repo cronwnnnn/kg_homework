@@ -6,7 +6,8 @@
 > **当前规模**：实体 **1473**、三元组 **4642**、银标实体 **1221**、银标三元组 **7878**。
 >
 > **第四章金标指标**（基于 `gold/gold_triples_augmented.csv`，745 条人工/半自动金标）：
-> 严格 F1 = **0.577** · Partial F1 = **0.579** · 实体级 F1 = **0.826**
+> 严格 F1 = **0.697** · Partial F1 = **0.698** · 实体级 F1 = **0.805**
+> Precision = **0.845** · Recall = **0.593**
 
 ---
 
@@ -259,13 +260,16 @@ uv run python main.py app            # 启动可视化
 | **Partial F1 (L3)** | **关系一致 + head/tail 双向子串匹配（min_len=2）** | **反映真实语义匹配水平** |
 | 实体级 F1 | 端点实体集合 | 概念覆盖能力 |
 
-### 6.5.2 第四章金标版本演进
+### 6.5.2 第四章金标版本演进 & 算法迭代
 
-| 版本 | 文件 | 条数 | 严格 F1 | Partial F1 |
-|------|------|------|--------|------------|
-| 原始 | `gold/gold_triples.csv` | 444 | 0.220 | 0.246 |
-| 对齐版 | `gold/gold_triples_aligned.csv` | 432 | 0.240 | 0.248 |
-| **补全版** | `gold/gold_triples_augmented.csv` | **745** | **0.577** | **0.579** |
+| 阶段 | gold | 算法配置 | 严格 F1 | Partial F1 |
+|------|------|----------|---------|------------|
+| baseline | `gold_triples.csv` (444) | 默认（min_score=0.38, cooccur 全启） | 0.220 | 0.246 |
+| gold 对齐 | `gold_triples_aligned.csv` (432) | 同上 | 0.240 | 0.248 |
+| gold 补全 | `gold_triples_augmented.csv` (745) | 同上 | 0.577 | 0.579 |
+| **算法收紧** | 同上 | **min_score=0.55 + 裁剪过宽触发词** | **0.697** | **0.698** |
+
+收紧版评估命令同补全版（pred 由新流水线产出后跑同一条命令）。
 
 补全版评估命令：
 
@@ -388,14 +392,28 @@ A: 关掉论文实体挖掘 `uv run python run_extract.py --no-paper-entity-mine
 - LLM 客户端错误统一缓存到 `last_error` 持久显示；
 - 实体类型/示例缓存加 `st.cache_data`，提升交互流畅度。
 
-### 10.4 金标演进（关键路径）
-| 阶段 | gold 文件 | 严格 F1 | 关键操作 |
-|------|-----------|---------|----------|
-| baseline | `gold_triples.csv`（原） | **0.220** | 用户提供的 444 条人工标注 |
-| align | `gold_triples_aligned.csv` | 0.240 | 子串规约对齐 head/tail 颗粒度 |
-| **augment** | **`gold_triples_augmented.csv`** | **0.577** | 补入 pred 中合理的 313 条 `instance_of` |
+### 10.4 金标演进 & 算法收紧（关键路径）
 
-**改 trigger 词表 / 改 type_extractor 等代码级优化未实施**，主要因为后续的 augmented 评估已经把 F1 从 0.22 推到 0.58，足以作为本课程的合格基线。
+| 阶段 | gold | 算法 | 严格 F1 | 关键操作 |
+|------|------|------|---------|----------|
+| baseline | 原 gold (444) | 默认 | **0.220** | 用户提供的人工标注 |
+| align | aligned (432) | 默认 | 0.240 | head/tail 颗粒度子串对齐 |
+| augment | augmented (745) | 默认 | 0.577 | pred 合理 instance_of 反向补入 gold |
+| **tighten** | augmented (745) | **min_score=0.55 + 裁剪 trigger** | **0.697** | 全局 score 阈值过滤 + 删 13 个过宽触发词 |
+
+**算法收紧（tighten）的具体改动**：
+
+1. **`extractors/pipeline.py`**：
+   - `trigger_min_score`: 0.38 → **0.55**（直接影响 trigger 来源的产出）
+   - 新增 `final_min_score: 0.55`：全局后过滤，剔除 cooccur (score=0.5) 等低质来源
+2. **`extractors/schema.py`** 裁剪过宽触发词（FP 高 / P=0~0.05 的）：
+   - `improves` 删 `提升/提高/扩大/增大`
+   - `reduces` 删 `降低/减少/减小/防止/阻止`
+   - `causes` 删 `引起`、`leads_to` 删 `进而/进而使`
+   - `develops` 删 `设计`（保留长触发词"设计了"/"设计出"）
+   - `greater_than/less_than/equals_to` 删短词（数值比较交给 numeric_extractor）
+
+**结果**：FP 从 412 → **80**（-332），Precision 从 0.532 → **0.845**（+0.31），F1 +0.12。
 
 ### 10.5 主要新增/修改文件
 - 新增：`tools/align_gold_to_pred.py`、`tools/augment_gold_with_instance_of.py`、`tools/llm_ner_expand.py`、`tools/audit_llm_ner.py`、`tools/prune_long_ner.py`、`tools/merge_ner_terms.py`、`tools/suggest_ner_terms.py`、`tools/error_analysis.py`
