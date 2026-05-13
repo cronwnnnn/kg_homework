@@ -684,10 +684,10 @@ ACADO,discussed_in,第2章大展弦比变展长变体飞行器设计规律研究
 起降翼展,has_value,20米
 连杆,has_value,120kg
 连杆,has_value,3200N·m
-连杆,has_value,600克
 连杆,has_value,7000N·m
 连杆,has_value,70MPa
 连杆长度,has_value,0.8m
+铰链,has_value,600克
 阻力,has_value,1150N·m
 变体,less_than_value,10%
 活动机翼,less_than_value,45%

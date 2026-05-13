@@ -1,31 +1,26 @@
-"""自动抽取结果 vs 银标/金标 评估器（多口径 + 错误分析）。
+"""自动抽取结果 vs 人工金标 评估器（多口径 + 错误分析）。
 
-三个评估口径：
-    1) **严格 F1**: (head, relation, tail) 全匹配；
-    2) **宽松 F1**: 仅 (head, tail) 匹配（忽略关系名）；
-    3) **关系级 F1**: 对银标中出现的每种关系分别算 P/R/F1，再综合宏平均。
-
-实体级评估：
-    - 端点实体集合的 P/R/F1（与旧版一致，便于纵向对比）。
+四个评估口径：
+    1) **严格 F1 (L1)**: (head, relation, tail) 全匹配；
+    2) **宽松 F1 (L2)**: 仅 (head, tail) 匹配（忽略关系名）；
+    3) **Partial F1 (L3)**: 关系一致 + head/tail 双向子串匹配（min_len=2）；
+    4) **实体级 F1**: 端点实体集合 P/R/F1。
 
 错误分析：
     - 写出 ``output/eval_tp.csv``、``eval_fp.csv``、``eval_fn.csv``，
       方便人工抽查最常见的误抽 / 漏抽。
-    - 同时打印关系级混淆矩阵 Top-N。
+    - 同时打印关系级 P/R/F1 与 (head, tail) 混淆矩阵 Top-N。
 
 默认输入：
     --pred output/triples_with_meta.csv
-    --gold gold/silver_triples.csv
+    --gold gold/gold_triples_augmented.csv     # 第四章主基线金标（745 条）
 
 按章节过滤（仅评估某一章的指标）：
     --chapter "第4章"            # 子串匹配 pred CSV 的 chapter 列
-    --gold gold/gold_triples.csv # 该金标本身只包含第四章人工标注
-    --report output/eval_report_ch4.txt
+    --include-global             # 同时纳入 instance_of 等全局类型分类
 
 用法：
     uv run python evaluate_kg.py
-    uv run python evaluate_kg.py --gold gold/silver_triples_loose.csv --loose
-    uv run python evaluate_kg.py --pred output/triples_with_meta.csv --gold my_gold.csv
     uv run python evaluate_kg.py --gold gold/gold_triples.csv --chapter "第4章" \
         --report output/eval_report_ch4.txt --out-dir output/ch4
 """
@@ -255,18 +250,17 @@ def partial_prf1(
 
 
 def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="知识图谱抽取 vs 银标/金标 多口径评估")
+    p = argparse.ArgumentParser(description="知识图谱抽取 vs 人工金标 多口径评估")
     p.add_argument("--pred", default="output/triples_with_meta.csv", help="预测三元组 CSV")
-    p.add_argument("--gold", default="gold/silver_triples.csv", help="金标/银标三元组 CSV")
     p.add_argument(
-        "--gold-entities",
-        default="gold/silver_entities.txt",
-        help="实体银标列表；不存在则从金标三元组端点推导",
+        "--gold",
+        default="gold/gold_triples_augmented.csv",
+        help="人工金标三元组 CSV（默认为第四章主基线 augmented 版）",
     )
     p.add_argument(
-        "--loose",
-        action="store_true",
-        help="将所有关系强制视为 co_occurs_with（用于与 silver_triples_loose.csv 配套）",
+        "--gold-entities",
+        default="gold/gold_entities.csv",
+        help="实体金标列表（可选）；不存在则从金标三元组端点推导",
     )
     p.add_argument(
         "--top-relations",
@@ -304,11 +298,6 @@ def parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
-def _normalize_loose(triples: set[tuple[str, str, str]]) -> set[tuple[str, str, str]]:
-    """把关系名抹平为 co_occurs_with（用于宽松匹配模式）。"""
-    return {(h, "co_occurs_with", t) for h, _r, t in triples}
-
-
 def _entity_pairs(triples: set[tuple[str, str, str]]) -> set[tuple[str, str]]:
     return {(h, t) for h, _r, t in triples}
 
@@ -318,7 +307,7 @@ def _relation_breakdown(
     gold: set[tuple[str, str, str]],
     top_n: int,
 ) -> list[tuple[str, int, int, int, float, float, float]]:
-    """按关系计算 P/R/F1（仅看银标中出现的关系，按银标频次取 Top-N）。"""
+    """按关系计算 P/R/F1（仅看金标中出现的关系，按金标频次取 Top-N）。"""
     gold_rel_counter = Counter(r for _, r, _ in gold)
     rels = [r for r, _ in gold_rel_counter.most_common(top_n)]
     out: list[tuple[str, int, int, int, float, float, float]] = []
@@ -369,7 +358,7 @@ def main() -> int:
         return 1
     if not os.path.exists(args.gold):
         print(f"[eval] 找不到金标文件: {args.gold}", file=sys.stderr)
-        print("[eval] 请先运行: uv run python tools/export_silver_gold.py", file=sys.stderr)
+        print("[eval] 请用 --gold 显式指定金标 CSV 路径。", file=sys.stderr)
         return 1
 
     normalize_rel = not args.no_normalize_rel
@@ -402,26 +391,18 @@ def main() -> int:
         aliases=aliases,
     ))
 
-    if args.loose:
-        pred = _normalize_loose(pred_full)
-        gold = _normalize_loose(gold_full)
-    else:
-        pred = pred_full
-        gold = gold_full
+    pred = pred_full
+    gold = gold_full
 
     # === 严格 / 宽松 / Partial / 实体对 四口径 ===
     p_strict, r_strict, f_strict, tp_strict = prf1(pred, gold)
     pred_pairs = _entity_pairs(pred)
     gold_pairs = _entity_pairs(gold)
     p_pair, r_pair, f_pair, tp_pair = prf1(pred_pairs, gold_pairs)
-    # Partial F1 仅在非 loose 模式下计算（loose 已经把关系抹平到 co_occurs_with）
-    if args.loose:
-        p_part, r_part, f_part, tp_part = (0.0, 0.0, 0.0, 0)
-    else:
-        p_part, r_part, f_part, tp_part = partial_prf1(pred, gold)
+    p_part, r_part, f_part, tp_part = partial_prf1(pred, gold)
 
     # === 实体端点 ===
-    # 当用户做章节过滤时，全文 silver_entities.txt 不适合作为参照，
+    # 当用户做章节过滤时，全文实体清单不适合作为参照，
     # 强制从过滤后的 gold 三元组端点推导，避免分母被拉高。
     if chapter_kw or not os.path.isfile(args.gold_entities):
         gold_entities = _entities_from_triples(gold)
@@ -432,8 +413,8 @@ def main() -> int:
     pred_entities = _entities_from_triples(pred)
     p_e, r_e, f_e, tp_e = prf1(pred_entities, gold_entities)
 
-    # === 关系级（仅在非 loose 模式下有意义） ===
-    rel_rows = [] if args.loose else _relation_breakdown(pred, gold, args.top_relations)
+    # === 关系级 P/R/F1 ===
+    rel_rows = _relation_breakdown(pred, gold, args.top_relations)
 
     # === TP / FP / FN ===
     tp_set = pred & gold
@@ -444,13 +425,13 @@ def main() -> int:
     if rel_rows:
         macro_f1 = sum(r[6] for r in rel_rows) / len(rel_rows)
 
-    confusion = [] if args.loose else _confusion_top(pred, gold)
+    confusion = _confusion_top(pred, gold)
 
     # === 报告 ===
     lines: list[str] = []
     lines.append("==== 知识图谱抽取评估 ====")
     lines.append(f"预测文件: {args.pred}")
-    lines.append(f"金标文件: {args.gold}{'  (loose 模式：关系名抹平为 co_occurs_with)' if args.loose else ''}")
+    lines.append(f"金标文件: {args.gold}")
     if chapter_kw:
         extra = "；含全局类型分类 (chapter 空 + instance_of/is_a/type_taxonomy)" if args.include_global else ""
         lines.append(f"章节过滤: chapter 包含 {chapter_kw!r} 的预测三元组{extra}")
@@ -467,15 +448,14 @@ def main() -> int:
                  f"TP={tp_strict}  pred={len(pred)}  gold={len(gold)}")
     lines.append(f"宽松 F1   (L2 仅 head,tail 一致):  P={p_pair:.4f}  R={r_pair:.4f}  F1={f_pair:.4f}  "
                  f"TP={tp_pair}  pred_pairs={len(pred_pairs)}  gold_pairs={len(gold_pairs)}")
-    if not args.loose:
-        lines.append(f"Partial F1(L3 head/tail 子串匹配): P={p_part:.4f}  R={r_part:.4f}  F1={f_part:.4f}  "
-                     f"TP={tp_part}  (关系一致 + head/tail 双向子串，min_len=2)")
+    lines.append(f"Partial F1(L3 head/tail 子串匹配): P={p_part:.4f}  R={r_part:.4f}  F1={f_part:.4f}  "
+                 f"TP={tp_part}  (关系一致 + head/tail 双向子串，min_len=2)")
     lines.append(f"实体级 F1 (端点集合):             P={p_e:.4f}  R={r_e:.4f}  F1={f_e:.4f}  "
                  f"TP={tp_e}  pred_ent={len(pred_entities)}  gold_ent={len(gold_entities)} {gold_ent_source}")
     lines.append("")
 
     if rel_rows:
-        lines.append(f"---- 关系级 P/R/F1 (银标频次 Top-{args.top_relations}) ----")
+        lines.append(f"---- 关系级 P/R/F1 (金标频次 Top-{args.top_relations}) ----")
         lines.append(f"  {'关系':<22} {'pred':>6} {'gold':>6} {'TP':>5}   P     R     F1")
         for rel, np_, ng, tp, pp, rr, ff in rel_rows:
             lines.append(f"  {rel:<22} {np_:>6} {ng:>6} {tp:>5}  {pp:.3f} {rr:.3f} {ff:.3f}")

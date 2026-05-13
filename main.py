@@ -1,18 +1,17 @@
 """项目主入口：子命令转发到各脚本。
 
 子命令：
-    all     一键执行：抽取 → 银标 → 评估
+    all     一键执行：抽取 → 评估
     extract 仅从 aftcln.txt 自动抽取（run_extract.py）
     manual  打印 ans.py 领域词典统计
-    silver  生成银标评估集（tools/export_silver_gold.py）
-    eval    与银标比对算 P/R/F1（evaluate_kg.py）
+    eval    与人工金标比对算 P/R/F1（evaluate_kg.py）
     app     启动 Streamlit 图谱浏览（app_streamlit.py）
 
 示例：
     uv run python main.py all                  # 一键全跑
     uv run python main.py extract --quiet
     uv run python main.py manual
-    uv run python main.py eval --loose
+    uv run python main.py eval --chapter "第4章" --include-global
     uv run python main.py app
 """
 
@@ -25,20 +24,17 @@ import sys
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="单-双折叠翼变体飞行器知识图谱构建系统（抽取/银标/评估/可视化）"
+        description="单-双折叠翼变体飞行器知识图谱构建系统（抽取/评估/可视化）"
     )
     sub = parser.add_subparsers(dest="cmd", required=True)
 
-    p_all = sub.add_parser("all", help="一键执行：抽取→银标→评估")
+    p_all = sub.add_parser("all", help="一键执行：抽取→评估")
     p_all.add_argument("rest", nargs=argparse.REMAINDER, help="透传给 run_all.py")
 
     p_ext = sub.add_parser("extract", help="抽取（run_extract.py）")
     p_ext.add_argument("rest", nargs=argparse.REMAINDER)
 
     sub.add_parser("manual", help="打印 ans.py 词典统计")
-
-    p_silver = sub.add_parser("silver", help="生成银标（tools/export_silver_gold.py）")
-    p_silver.add_argument("rest", nargs=argparse.REMAINDER)
 
     p_eval = sub.add_parser("eval", help="评估（evaluate_kg.py）")
     p_eval.add_argument("rest", nargs=argparse.REMAINDER)
@@ -55,8 +51,6 @@ def main() -> int:
         return subprocess.call([py, "run_extract.py", *args.rest])
     if args.cmd == "manual":
         return subprocess.call([py, "ans.py"])
-    if args.cmd == "silver":
-        return subprocess.call([py, "tools/export_silver_gold.py", *args.rest])
     if args.cmd == "eval":
         return subprocess.call([py, "evaluate_kg.py", *args.rest])
     if args.cmd == "app":
