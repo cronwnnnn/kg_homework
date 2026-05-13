@@ -1,50 +1,52 @@
 ==== 抽取统计 ====
 段落数: 438
 句子数: 1042
-实体数: 495
-三元组数: 1300
+实体数: 670
+三元组数: 1584
 
 ---- 按来源 (合并后) ----
   chapter: 474
   type: 437
-  trigger: 238
-  pattern: 92
+  llm_discover: 290
+  trigger: 234
+  pattern: 89
   numeric: 48
   trigger+pattern: 6
   trigger+pattern+pattern: 4
   trigger+pattern+pattern+pattern: 1
+  trigger+llm_discover: 1
 
 ---- 按关系类型 (Top-30) ----
   discussed_in: 474
-  instance_of: 437
-  has_part: 47
+  instance_of: 449
+  has_part: 132
   has_value: 46
-  located_at: 37
-  uses_method: 30
-  generates: 24
+  located_at: 40
+  generates: 38
+  uses_method: 36
+  has_performance: 28
+  has_parameter: 27
+  affects: 23
   used_for: 22
-  connected_to: 16
-  needs: 16
+  needs: 21
+  reduces: 19
+  connected_to: 18
+  improves: 18
+  satisfies: 15
   develops: 15
-  improves: 12
-  satisfies: 12
-  verifies: 11
+  verifies: 14
+  causes: 14
+  controls: 13
+  drives: 11
   manufactures: 11
-  controls: 11
-  reduces: 10
-  drives: 9
-  depends_on: 8
-  affects: 7
+  transforms_to: 10
+  depends_on: 10
+  has_configuration: 9
+  is_a: 8
   implements: 7
-  transforms_to: 6
   provides: 6
-  causes: 6
-  solves: 4
-  combines_with: 4
-  leads_to: 3
-  driven_by: 2
-  less_than_value: 2
-  greater_than: 1
+  actuated_by: 5
+  developed_by: 5
 
 ---- 按来源 (合并前) ----
   trigger: 950

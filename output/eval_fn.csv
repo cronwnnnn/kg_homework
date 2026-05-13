@@ -78,8 +78,8 @@ U型槽,used_for,增强抗扭性能
 副翼,used_for,机翼
 副翼上偏,used_for,降低升力
 副翼下偏,used_for,增加升力
+副翼偏转,generates,俯仰力矩
 副翼偏转,generates,阻力
-副翼偏转,has_value,3200N·m
 副翼偏转产生阻力,has_value,900N
 副翼偏转线性区,used_for,稳定控制
 副翼偏转角度增大,causes,失速
@@ -232,7 +232,6 @@ U型槽,used_for,增强抗扭性能
 油箱,has_part,机身油箱
 洛克希德马丁,develops,Z字形折叠翼
 活动机翼,has_part,内侧端面
-活动机翼,has_part,副翼
 活动机翼,has_part,外侧端面
 活动机翼,instance_of,结构部件
 活动机翼固定,uses_method,电推杆驱动锥形滑块

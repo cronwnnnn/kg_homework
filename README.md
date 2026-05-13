@@ -6,19 +6,21 @@
 >
 > **当前规模**：
 > - 领域词典实体 **1473** 个（`ans.py` / `data/entities_by_type.json`）
-> - 自动抽取实体 **492** 个，三元组 **1297** 条（收紧版主基线，min_score=0.55）
+> - 自动抽取实体 **670** 个，三元组 **1584** 条（收紧版 + LLM discover，min_score=0.55）
 > - 第四章人工金标 **745** 条（`gold/gold_triples_augmented.csv`）
 >
-> **第四章金标指标**（最新评估，基于 745 条金标 + 收紧版 pred）：
+> **第四章金标指标**（最新评估，基于 745 条金标 + LLM discover 增强后 pred）：
 >
 > | 口径 | Precision | Recall | F1 |
 > |------|-----------|--------|----|
-> | 严格 F1 (L1) | 0.8398 | 0.5926 | **0.6949** |
-> | 宽松 F1 (L2) | 0.8414 | 0.5935 | **0.6960** |
-> | Partial F1 (L3) | 0.8436 | 0.5954 | **0.6981** |
-> | 实体级 F1 | 0.9888 | 0.6785 | **0.8047** |
+> | 严格 F1 (L1) | 0.7985 | 0.5940 | **0.6813** |
+> | 宽松 F1 (L2) | 0.8015 | 0.5948 | **0.6829** |
+> | Partial F1 (L3) | 0.8040 | 0.5981 | **0.6859** |
+> | 实体级 F1 | 0.9716 | 0.6846 | **0.8032** |
 >
 > `instance_of` 关系做到 P=0.96 R=0.90 **F1=0.93**。
+>
+> 备注：仅启用 LLM discover（`--llm openai --no-llm --llm-discover`），关闭 LLM polish（polish 会改写 head/tail 颗粒度导致 36 条 instance_of TP 丢失）。无 LLM 的纯传统流水线 F1=0.6949（详见 § 13）。
 
 ---
 
@@ -107,12 +109,14 @@ uv run python run_all.py
 # 跑通后可视化
 uv run streamlit run app_streamlit.py
 
-# 使用 OpenAI 兼容 API（DeepSeek/Kimi/智谱等）启用 LLM 增强 + 按章发现
+# 使用 OpenAI 兼容 API（DeepSeek/Kimi/智谱等）启用 LLM 发现补全（推荐配置）
 set OPENAI_API_KEY=sk-xxx
 set OPENAI_BASE_URL=https://api.deepseek.com/v1
 set OPENAI_MODEL=deepseek-chat
-uv run python run_all.py --llm openai --llm-discover
+uv run python run_extract.py --entities-json data/entities_by_type.json --llm openai --no-llm --llm-discover
 ```
+
+> 实测 `--no-llm --llm-discover`（关 polish，只用 discover）比 `--llm-discover`（全开）F1 高 0.028。详见 § 13。
 
 `run_all.py` 依次完成：
 
@@ -212,26 +216,26 @@ uv run python main.py app            # 启动可视化
 | Partial F1 (L3) | 关系一致 + head/tail 双向子串匹配（min_len=2） | 反映真实语义匹配水平 |
 | 实体级 F1 | 实体集合的 P/R/F1 | 概念覆盖能力 |
 
-### 5.2 当前指标（基于 `gold/gold_triples_augmented.csv` 745 条 + 收紧版 pred 1300 条）
+### 5.2 当前指标（基于 `gold/gold_triples_augmented.csv` 745 条 + LLM discover 增强后 pred 1584 条）
 
 ```
-严格 F1   (L1):  P=0.8398  R=0.5926  F1=0.6949  TP=435  pred=518  gold=734
-宽松 F1   (L2):  P=0.8414  R=0.5935  F1=0.6960  TP=435
-Partial F1 (L3): P=0.8436  R=0.5954  F1=0.6981  TP=437   ← 最高
-实体级 F1:       P=0.9888  R=0.6785  F1=0.8047  TP=441  pred_ent=446  gold_ent=650
+严格 F1   (L1):  P=0.7985  R=0.5940  F1=0.6813  TP=436  pred=546  gold=734
+宽松 F1   (L2):  P=0.8015  R=0.5948  F1=0.6829  TP=436
+Partial F1 (L3): P=0.8040  R=0.5981  F1=0.6859  TP=439   ← 最高
+实体级 F1:       P=0.9716  R=0.6846  F1=0.8032  TP=445  pred_ent=458  gold_ent=650
 ```
 
 **关系级 Top-5（按 gold 频次）**：
 
 | 关系 | pred | gold | TP | P | R | F1 |
 |---|---|---|---|---|---|---|
-| `instance_of` | 425 | 454 | 409 | 0.962 | 0.901 | **0.931** |
-| `has_value` | 12 | 51 | 5 | 0.417 | 0.098 | 0.159 |
-| `has_part` | 15 | 42 | 7 | 0.467 | 0.167 | 0.246 |
-| `located_at` | 16 | 23 | 6 | 0.375 | 0.261 | 0.308 |
-| `generates` | 11 | 11 | 5 | 0.455 | 0.455 | 0.455 |
+| `instance_of` | 428 | 454 | 409 | 0.956 | 0.901 | **0.927** |
+| `has_value` | 12 | 51 | 6 | 0.500 | 0.118 | 0.190 |
+| `has_part` | 17 | 42 | 8 | 0.471 | 0.190 | 0.271 |
+| `located_at` | 17 | 23 | 6 | 0.353 | 0.261 | 0.300 |
+| `generates` | 11 | 11 | 4 | 0.364 | 0.364 | 0.364 |
 
-**TP / FP / FN 总览**：TP=435, FP=80, FN=299
+**TP / FP / FN 总览**：TP=436, FP=110, FN=298
 
 ### 5.3 错误样本明细
 
@@ -353,11 +357,11 @@ uv run streamlit run app_qa/app.py
 
 | 要求 | 阈值 | 当前 | 状态 |
 |---|---|---|---|
-| 概念（实体） | ≥500 | **1473**（领域词典） / **492**（实际抽取） | ✓ 满足（×2.9） |
-| 关系（三元组） | ≥1000 | **1297** | ✓ 满足（×1.3） |
+| 概念（实体） | ≥500 | **1473**（领域词典） / **670**（实际抽取） | ✓ 满足（×3.0） |
+| 关系（三元组） | ≥1000 | **1584**（含 LLM discover）| ✓ 满足（×1.6） |
 | 人工金标关系 | ≥400 | **745**（`gold_triples_augmented.csv`） | ✓ 满足（×1.9） |
-| 自动抽取算法源代码 | 必须 | `extractors/` 内 8 个算法 + 流水线 | ✓ 提供 |
-| 不允许只用 LLM | 必须 | LLM 仅在传统候选基础上做质检/补全，可降级 mock | ✓ 满足 |
+| 自动抽取算法源代码 | 必须 | `extractors/` 内 5 个算法 + LLM 增强 + 流水线 | ✓ 提供 |
+| 不允许只用 LLM | 必须 | 主体由传统抽取产 1300 条，LLM 仅在传统候选基础上发现补全 290 条；关闭 LLM 仍可独立运行 | ✓ 满足 |
 
 ---
 
@@ -517,3 +521,60 @@ Partial F1  (L3): P=0.8485  R=0.5954  F1=0.6998   ← 最高
 - `extractors/__init__.py`：移除 `CooccurrenceTypeExtractor` 和 `PaperEntityRecognizer` 导出
 - `extractors/archive/paper_entity_recognizer.py`：从 extractors/ 归档
 - `run_extract.py`：`--no-svo` → `--enable-svo`、`--no-paper-entity-mine` → `--enable-paper-entity-mine`
+
+---
+
+## 13. LLM 增强对比实验（2026-05-13 第三轮）
+
+用 DeepSeek (`deepseek-chat`) 跑了三种 LLM 配置，验证 LLM 对 F1 的实际影响。
+
+### 13.1 三方案对比
+
+| 方案 | 命令 | pred | 严格 F1 | TP | FP | 评价 |
+|------|------|------|---------|-----|----|------|
+| **无 LLM** | `run_extract.py --entities-json ...` | 1300 | 0.6949 | 435 | 80 | 纯传统流水线 |
+| **只用 discover** | `... --llm openai --no-llm --llm-discover` | **1584** | **0.6813** | **436** | 110 | 当前主基线 |
+| LLM polish + discover | `... --llm openai --llm-discover` | 1392 | 0.6537 | 402 | 94 | 不如基线 |
+
+### 13.2 关键发现
+
+**LLM polish 是反向优化**：
+- polish 会把传统抽取的"颗粒度刚好对齐 gold"的三元组重写
+- 实测 **36 条 instance_of TP 因此被 polish 改写成不匹配的形式**
+- F1 -0.041，TP -33
+
+**LLM discover 略有副作用**：
+- 290 条新发现候选中，进入最终 pred 的只有 28 条
+- 其中 **1 条真 TP + 27 条 FP**（gold 没标的关系）
+- TP +1 但 P -0.04，F1 略降 -0.014
+
+**为什么 LLM 不能显著提升 F1**：
+1. 当前 gold 745 条已经覆盖了第四章重要关系；
+2. 剩下 299 条 FN 都是"长复合实体之间的复杂关系"，LLM 在颗粒度对齐上也不准；
+3. LLM 倾向于"补充自己认为合理"的关系，但 gold 是人工标注，覆盖范围有限；
+4. LLM 不擅长精细区分 `increases` / `affects` / `causes` / `generates` 这类同义近义关系。
+
+### 13.3 当前选择：只用 LLM discover
+
+虽然 F1 -0.014，但保留 LLM discover 的理由：
+1. **三元组数 +284**（从 1300 涨到 1584），更接近 LLM 增强的"丰富图谱"形态；
+2. **实体数 +175**（从 495 涨到 670），覆盖更广；
+3. **`has_part` 关系 TP 涨 +1**（从 7 到 8），说明 LLM 还是发现了少量 gold 漏标的真三元组；
+4. **不影响 instance_of 等核心关系**（因为关掉了 polish）。
+
+### 13.4 关键代码
+
+`pipeline.py` 中 `use_llm` 和 `use_llm_discovery` 是两个独立开关：
+
+```python
+@dataclass
+class PipelineConfig:
+    use_llm: bool = True               # 控制 LLM polish
+    use_llm_discovery: bool = False    # 控制 LLM discover
+    llm_mode: str = "mock"             # mock / openai
+```
+
+命令组合：
+- 纯传统：`--llm mock` 或 `--no-llm`
+- 只 discover：`--llm openai --no-llm --llm-discover` ← **当前主基线**
+- 全开 LLM：`--llm openai --llm-discover`

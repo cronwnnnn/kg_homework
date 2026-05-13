@@ -7,38 +7,38 @@
 关系剔除: 评估时排除 ['co_occurs_with', 'discussed_in']
 
 ---- 三元组 / 实体对 / 实体 四口径 ----
-严格 F1   (L1 三元组全相等):       P=0.8398  R=0.5926  F1=0.6949  TP=435  pred=518  gold=734
-宽松 F1   (L2 仅 head,tail 一致):  P=0.8414  R=0.5935  F1=0.6960  TP=435  pred_pairs=517  gold_pairs=733
-Partial F1(L3 head/tail 子串匹配): P=0.8436  R=0.5954  F1=0.6981  TP=437  (关系一致 + head/tail 双向子串，min_len=2)
-实体级 F1 (端点集合):             P=0.9888  R=0.6785  F1=0.8047  TP=441  pred_ent=446  gold_ent=650 (从 gold 三元组端点推导)
+严格 F1   (L1 三元组全相等):       P=0.7985  R=0.5940  F1=0.6813  TP=436  pred=546  gold=734
+宽松 F1   (L2 仅 head,tail 一致):  P=0.8015  R=0.5948  F1=0.6829  TP=436  pred_pairs=544  gold_pairs=733
+Partial F1(L3 head/tail 子串匹配): P=0.8040  R=0.5981  F1=0.6859  TP=439  (关系一致 + head/tail 双向子串，min_len=2)
+实体级 F1 (端点集合):             P=0.9716  R=0.6846  F1=0.8032  TP=445  pred_ent=458  gold_ent=650 (从 gold 三元组端点推导)
 
 ---- 关系级 P/R/F1 (金标频次 Top-15) ----
   关系                       pred   gold    TP   P     R     F1
   instance_of               428    454   409  0.956 0.901 0.927
-  has_value                  12     51     5  0.417 0.098 0.159
-  has_part                   15     42     7  0.467 0.167 0.246
-  causes                      2     25     0  0.000 0.000 0.000
+  has_value                  12     51     6  0.500 0.118 0.190
+  has_part                   17     42     8  0.471 0.190 0.271
   uses_method                 3     25     1  0.333 0.040 0.071
-  located_at                 16     23     6  0.375 0.261 0.308
-  used_for                    1     17     0  0.000 0.000 0.000
+  causes                      5     25     0  0.000 0.000 0.000
+  located_at                 17     23     6  0.353 0.261 0.300
   reduces                     2     17     1  0.500 0.059 0.105
+  used_for                    1     17     0  0.000 0.000 0.000
   affects                     2     15     0  0.000 0.000 0.000
-  generates                  11     11     5  0.455 0.455 0.455
+  generates                  11     11     4  0.364 0.364 0.364
   develops                    2     10     0  0.000 0.000 0.000
-  improves                    1      7     0  0.000 0.000 0.000
   increases                   0      7     0  0.000 0.000 0.000
+  improves                    1      7     0  0.000 0.000 0.000
   equivalent_to               0      7     0  0.000 0.000 0.000
   defined_as                  0      6     0  0.000 0.000 0.000
-  宏平均 F1 (Top-15 关系): 0.1514
+  宏平均 F1 (Top-15 关系): 0.1486
 
 ---- 实体对相同但关系不同 (Top-12 混淆) ----
   gold_rel           -> pred_rel            cnt
   located_at         -> connected_to        1
 
 ---- 错误分析样本 ----
-TP (正确): 435 条
-FP (误抽): 83 条
-FN (漏抽): 299 条
+TP (正确): 436 条
+FP (误抽): 110 条
+FN (漏抽): 298 条
 
 ---- 章节评估注意事项 ----
 - pred 仅保留 chapter 含 '第4章' 的三元组（含 chapter 空但关系是全局类型分类的行）。
