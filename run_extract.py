@@ -124,7 +124,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--input", default="aftcln.txt", help="输入论文文本路径")
     parser.add_argument("--llm", default=os.environ.get("KG_LLM_MODE", "mock"), choices=["mock", "openai"], help="LLM 模式")
-    parser.add_argument("--no-svo", action="store_true", help="跳过 spaCy SVO 抽取（无 spaCy 模型时可用）")
+    parser.add_argument("--enable-svo", action="store_true", help="启用 spaCy SVO 抽取（默认关闭：未装模型时无产出，装上后噪声较大）")
     parser.add_argument("--no-llm", action="store_true", help="完全跳过 LLM 增强层")
     parser.add_argument("--max-window", type=int, default=30, help="触发词共现窗口大小")
     parser.add_argument("--min-score", type=float, default=0.30, help="触发词三元组最小置信度")
@@ -156,9 +156,9 @@ def parse_args() -> argparse.Namespace:
         help="论文挖掘出的实体串在全文至少出现 N 次才并入词典（默认 1；设为 2 可降噪）",
     )
     parser.add_argument(
-        "--no-paper-entity-mine",
+        "--enable-paper-entity-mine",
         action="store_true",
-        help="关闭基于 spaCy 的论文实体挖掘（仅用原领域词表做 NER）",
+        help="启用基于 spaCy 的论文实体挖掘（默认关闭：会引入长复合实体吞并短实体的 FP）",
     )
     parser.add_argument("--quiet", action="store_true", help="减少日志输出")
     return parser.parse_args()
@@ -196,7 +196,7 @@ def main() -> int:
     print(f"[run_extract] 论文字符数: {len(raw_text)}")
 
     config = PipelineConfig(
-        use_svo=not args.no_svo,
+        use_svo=args.enable_svo,
         use_llm=not args.no_llm,
         llm_mode=args.llm,
         trigger_max_window=args.max_window,
@@ -205,7 +205,7 @@ def main() -> int:
         use_llm_discovery=args.llm_discover,
         llm_discovery_max_new_per_chapter=args.llm_discover_max_new,
         llm_discovery_max_existing_lines=args.llm_discover_max_lines,
-        mine_paper_entities=not args.no_paper_entity_mine,
+        mine_paper_entities=args.enable_paper_entity_mine,
         paper_entity_min_doc_freq=max(1, args.paper_entity_min_freq),
     )
     pipeline = ExtractionPipeline(vocab=vocab, config=config, entities_by_type=entities_by_type)

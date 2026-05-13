@@ -6,6 +6,7 @@
 ACADO,instance_of,技术
 Aquila,instance_of,飞行器
 B-1,instance_of,飞行器
+Boeing106,instance_of,飞行器
 CFD,instance_of,技术
 CFD计算,instance_of,技术
 DARPA,instance_of,组织机构
@@ -257,6 +258,7 @@ Z字形折叠翼,instance_of,机翼构型
 机翼前缘,instance_of,气动概念
 机翼厚度,instance_of,设计参数
 机翼受力,instance_of,概念
+机翼弯矩,instance_of,设计参数
 机翼形状,instance_of,概念
 机翼断开,instance_of,概念
 机翼油箱,instance_of,结构部件
@@ -358,6 +360,7 @@ Z字形折叠翼,instance_of,机翼构型
 舵面,instance_of,结构部件
 舵面偏转,instance_of,控制方法
 芒克,instance_of,人物
+苍鹭,instance_of,飞行器
 莫哈韦,instance_of,飞行器
 菱形结构,instance_of,概念
 蒙皮,instance_of,结构部件

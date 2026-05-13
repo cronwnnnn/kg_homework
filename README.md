@@ -13,12 +13,12 @@
 >
 > | 口径 | Precision | Recall | F1 |
 > |------|-----------|--------|----|
-> | 严格 F1 (L1) | 0.8447 | 0.5926 | **0.6966** |
-> | 宽松 F1 (L2) | 0.8463 | 0.5935 | **0.6977** |
-> | Partial F1 (L3) | 0.8485 | 0.5954 | **0.6998** |
-> | 实体级 F1 | 0.9932 | 0.6769 | **0.8051** |
+> | 严格 F1 (L1) | 0.8398 | 0.5926 | **0.6949** |
+> | 宽松 F1 (L2) | 0.8414 | 0.5935 | **0.6960** |
+> | Partial F1 (L3) | 0.8436 | 0.5954 | **0.6981** |
+> | 实体级 F1 | 0.9888 | 0.6785 | **0.8047** |
 >
-> `instance_of` 关系做到 P=0.962 R=0.901 **F1=0.931**。
+> `instance_of` 关系做到 P=0.96 R=0.90 **F1=0.93**。
 
 ---
 
@@ -44,43 +44,43 @@ my-project/
 ├── extractors/                 # 抽取算法核心包
 │   ├── preprocess.py           #   章节/段落/句子切分
 │   ├── ner.py                  #   HybridNER：AC 自动机 + 数值/型号正则
-│   ├── paper_entity_recognizer.py  # spaCy 论文实体挖掘
 │   ├── trigger_extractor.py    #   主力：触发词+实体共现
 │   ├── pattern_extractor.py    #   高精度正则模板
-│   ├── svo_extractor.py        #   spaCy 依存 SVO
+│   ├── svo_extractor.py        #   spaCy 依存 SVO（默认禁用）
 │   ├── numeric_extractor.py    #   数值/单位关系
-│   ├── type_extractor.py       #   类型/共现/章节关系
+│   ├── type_extractor.py       #   类型 + 章节归属
 │   ├── relation_normalizer.py  #   关系归一化到统一本体
 │   ├── llm_enhancer.py         #   LLM 二阶段质检与发现
 │   ├── schema.py               #   Triple / Mention / RelationOntology
-│   └── pipeline.py             #   总调度
-├── tools/                       # 工具脚本（见 § 6.4 表格）
-│   ├── export_entities_by_type_json.py  # 词典 → JSON
-│   ├── align_gold_to_pred.py            # gold/pred 颗粒度对齐
-│   ├── augment_gold_with_instance_of.py # 用 pred 合理 instance_of 补 gold
-│   ├── error_analysis.py                # 错误分析报告
-│   ├── suggest_ner_terms.py             # 从 FN 推荐 NER 词典扩充
-│   ├── merge_ner_terms.py               # 合并 NER 词典
-│   ├── llm_ner_expand.py / audit_llm_ner.py / prune_long_ner.py  # LLM NER 实验工具
+│   ├── pipeline.py             #   总调度
+│   └── archive/                #   已归档（默认禁用）
+│       └── paper_entity_recognizer.py  # spaCy 论文实体挖掘
+├── tools/                       # 主线工具
+│   ├── export_entities_by_type_json.py  # 词典 → JSON（run_all.py 必用）
+│   └── archive/                 # 一次性脚本归档（详见 archive/README.md）
+│       ├── align_gold_to_pred.py            # gold/pred 颗粒度对齐
+│       ├── augment_gold_with_instance_of.py # 用 pred 合理 instance_of 补 gold
+│       ├── error_analysis.py                # 错误分析报告
+│       ├── suggest_ner_terms.py             # 从 FN 推荐 NER 词典扩充
+│       ├── merge_ner_terms.py               # 合并 NER 词典
+│       ├── llm_ner_expand.py                # LLM 全文 NER（实验回滚）
+│       ├── audit_llm_ner.py                 # LLM 实体审计（实验回滚）
+│       └── prune_long_ner.py                # 长复合词剔除（实验回滚）
 ├── data/
 │   ├── entities_by_type.json    # 主词典 JSON（运行时只读，可脱离 ans.py）
-│   ├── aliases.json             # 实体别名规约表
-│   ├── entities_to_add_llm.json / entities_to_add_llm_audited.json  # LLM NER 实验产物
-│   └── entities_by_type.backup_*.json  # 词典备份
+│   └── aliases.json             # 实体别名规约表
 ├── gold/                        # 第四章人工金标
 │   ├── gold_triples.csv         # 第四章原始人工金标（444 条）
 │   ├── gold_triples_aligned.csv # 对齐版（432 条）
 │   ├── gold_triples_augmented.csv  # 补全版（745 条，主基线）
-│   ├── gold_triples.original.csv / gold_triples_aligned.csv.before_augment.csv  # 备份
+│   ├── gold_entities.csv        # 金标实体清单
 │   └── README_gold_ch4.md       # 第四章金标演进说明
 └── output/                      # 产出
     ├── triples_with_meta.csv    # 带元信息的三元组
     ├── entities.csv             # 实体清单
     ├── knowledge_graph.csv      # 兼容三列格式
     ├── extraction_stats.txt     # 抽取统计
-    ├── eval_report*.txt         # 各种评估报告（按 gold 版本/算法版本区分）
-    ├── gold_alignment_report.md / gold_augment_report.md  # 金标改写详情
-    ├── error_analysis_ch4.md / ner_suggestions_ch4.md / llm_ner_audit_report.md  # 分析报告
+    ├── eval_report.txt          # 第四章金标评估报告
     └── eval_tp.csv / eval_fp.csv / eval_fn.csv  # 错误分析明细
 ```
 
@@ -146,7 +146,7 @@ uv run python main.py app            # 启动可视化
 - **AC 自动机**（`pyahocorasick`）对 1200+ 词典实体做 O(N) 多模式匹配；
 - **数值正则**抓 `400km/h`、`12t`、`9000N·m` 等带单位数值；
 - **型号正则**抓 `RQ-4A`、`MQ-9`、`F-111` 等型号编码；
-- **paper_entity_recognizer.py**：用 spaCy 中文模型挖掘"论文中真实出现但词典未覆盖"的串（命名实体、`noun_chunks`、连续名/专名拼接），频次 ≥1 即并入 `HybridNER.add_terms`。当前主基线已禁用此模块（`--no-paper-entity-mine`），以避免长复合实体"吞并"短实体造成的 FP。
+- **paper_entity_recognizer.py**：用 spaCy 中文模型挖掘"论文中真实出现但词典未覆盖"的串（命名实体、`noun_chunks`、连续名/专名拼接），频次 ≥1 即并入 `HybridNER.add_terms`。**当前已归档**到 `extractors/archive/paper_entity_recognizer.py`，主基线默认禁用。如需启用，加 `--enable-paper-entity-mine`（会自动从 archive 加载）。
 - 去重时采用「长 mention 优先 + 同范围去重」。
 
 ### 4.3 触发词共现 `trigger_extractor.py`（主力，命中前 **950** 条，过滤后 238 条）
@@ -165,24 +165,25 @@ uv run python main.py app            # 启动可视化
 - 触发词左侧取**最右最长**词典实体作 head，右侧取**最左最长**作 tail；
 - score = 0.82~0.85（高于触发词，因为模板更确定）。
 
-### 4.5 依存 SVO `svo_extractor.py`（当前 0 条，需 spaCy `zh_core_web_sm` 模型）
+### 4.5 依存 SVO `svo_extractor.py`（默认关闭）
 
 - 用 spaCy 中文模型，遍历所有 VERB/AUX 节点（不再只看 ROOT）；
 - 收集 `nsubj/top/nsubjpass/csubj` 作 subject、`dobj/pobj/iobj/attr/ccomp/xcomp` 作 object；
 - 谓词经 `RelationNormalizer` 归一化到本体；
 - 头/尾用词典 NER 回填，"NER 命中实体"比"spaCy 切出的零碎词"优先；
-- spaCy 模型未安装时优雅降级（不影响其他抽取器）。
+- **默认禁用**（评估时发现关系归一化噪声大，对 F1 无正向贡献）。需要时加 `--enable-svo`。
 
 ### 4.6 数值关系 `numeric_extractor.py`（前 57 条，合并后 48 条）
 
 - 四组正则匹配 `X 为/达到 N 单位`、`X 在 N 单位 左右`、`X 大于 N 单位`、`X 小于 N 单位`；
 - 关系映射为 `has_value` / `greater_than_value` / `less_than_value`。
 
-### 4.7 类型/章节/共现 `type_extractor.py`
+### 4.7 类型 / 章节 `type_extractor.py`
 
-- `TypeBasedExtractor`（**434** 条 `instance_of`）：在文中出现的实体 → 类型标签（飞行器/机翼构型/...）；
-- `ChapterMembershipExtractor`（**474** 条 `discussed_in`）：实体在某章节出现 ≥2 次 → 章节标题；
-- `CooccurrenceTypeExtractor`（前 674 条）：跨类型规则（飞行器 + 设计参数 → `has_parameter`，结构部件 + 材料 → `made_of`，等等）；收紧版评估时通过 `--exclude-relations co_occurs_with` 屏蔽，避免低质共现关系污染 F1。
+- `TypeBasedExtractor`（**434** 条 `instance_of`）：在文中出现的实体 → 类型标签（飞行器/机翼构型/...）；**这是 F1=0.6966 的 94% 贡献者**（TP=409，F1=0.931）。
+- `ChapterMembershipExtractor`（**474** 条 `discussed_in`）：实体在某章节出现 ≥2 次 → 章节标题；评估时被 `--exclude-relations` 屏蔽（不影响 F1），但 app_qa 问答助手"在哪章讨论"功能仍依赖它。
+
+> 原 `CooccurrenceTypeExtractor`（句子级类型对共现产 `has_parameter`/`made_of` 等关系）已删除：产出 score=0.50 被全局阈值 0.55 全部砍掉，对 F1 贡献 0。
 
 ### 4.8 关系归一化 `relation_normalizer.py`
 
@@ -211,13 +212,13 @@ uv run python main.py app            # 启动可视化
 | Partial F1 (L3) | 关系一致 + head/tail 双向子串匹配（min_len=2） | 反映真实语义匹配水平 |
 | 实体级 F1 | 实体集合的 P/R/F1 | 概念覆盖能力 |
 
-### 5.2 当前指标（基于 `gold/gold_triples_augmented.csv` 745 条 + 收紧版 pred 1297 条）
+### 5.2 当前指标（基于 `gold/gold_triples_augmented.csv` 745 条 + 收紧版 pred 1300 条）
 
 ```
-严格 F1   (L1):  P=0.8447  R=0.5926  F1=0.6966  TP=435  pred=515  gold=734
-宽松 F1   (L2):  P=0.8463  R=0.5935  F1=0.6977  TP=435
-Partial F1 (L3): P=0.8485  R=0.5954  F1=0.6998  TP=437   ← 最高
-实体级 F1:       P=0.9932  R=0.6769  F1=0.8051  TP=440  pred_ent=443  gold_ent=650
+严格 F1   (L1):  P=0.8398  R=0.5926  F1=0.6949  TP=435  pred=518  gold=734
+宽松 F1   (L2):  P=0.8414  R=0.5935  F1=0.6960  TP=435
+Partial F1 (L3): P=0.8436  R=0.5954  F1=0.6981  TP=437   ← 最高
+实体级 F1:       P=0.9888  R=0.6785  F1=0.8047  TP=441  pred_ent=446  gold_ent=650
 ```
 
 **关系级 Top-5（按 gold 频次）**：
@@ -275,16 +276,18 @@ uv run python evaluate_kg.py \
 
 ### 6.4 配套工具
 
+> 这些工具各自只在某个阶段跑过一次，产物已合入主线。统一归档在 `tools/archive/`，详见 [`tools/archive/README.md`](tools/archive/README.md)。
+
 | 工具 | 用途 |
 |------|------|
-| `tools/align_gold_to_pred.py` | 把 gold 的 head/tail 与 pred 子串规约对齐 |
-| `tools/augment_gold_with_instance_of.py` | 把 pred 中合理的 `instance_of` 反向补入 gold |
-| `tools/error_analysis.py` | 错误分析报告（FP/FN 关系分布 + 混淆矩阵） |
-| `tools/suggest_ner_terms.py` | 从 FN 推荐 NER 词典扩充 |
-| `tools/llm_ner_expand.py` | LLM 全文扫描发现未登录实体（实验用，已回滚） |
-| `tools/audit_llm_ner.py` | LLM 抽取结果的规则审计与重打类型 |
-| `tools/merge_ner_terms.py` | 把审计后的实体合并入 `entities_by_type.json` |
-| `tools/prune_long_ner.py` | 剔除会"吞并"短实体的过长复合 NER 词 |
+| `tools/archive/align_gold_to_pred.py` | 把 gold 的 head/tail 与 pred 子串规约对齐 |
+| `tools/archive/augment_gold_with_instance_of.py` | 把 pred 中合理的 `instance_of` 反向补入 gold |
+| `tools/archive/error_analysis.py` | 错误分析报告（FP/FN 关系分布 + 混淆矩阵） |
+| `tools/archive/suggest_ner_terms.py` | 从 FN 推荐 NER 词典扩充 |
+| `tools/archive/llm_ner_expand.py` | LLM 全文扫描发现未登录实体（实验用，已回滚） |
+| `tools/archive/audit_llm_ner.py` | LLM 抽取结果的规则审计与重打类型 |
+| `tools/archive/merge_ner_terms.py` | 把审计后的实体合并入 `entities_by_type.json` |
+| `tools/archive/prune_long_ner.py` | 剔除会"吞并"短实体的过长复合 NER 词 |
 
 ### 6.5 学术诚信声明
 
@@ -364,7 +367,7 @@ uv run streamlit run app_qa/app.py
 A: 能，默认就是 mock 模式。LLM 增强会被替换为"再去重 + 边界清洗"。
 
 **Q: spaCy 模型下载失败？**
-A: SVO 与 paper_entity_recognizer 会优雅降级，仅触发词/模板/类型/章节等抽取器仍工作。可加 `--no-svo --no-paper-entity-mine` 完全跳过 spaCy。
+A: SVO 与 paper_entity_recognizer 默认就是关闭的，所有 spaCy 相关组件都不会被调用。如需启用，加 `--enable-svo --enable-paper-entity-mine`。
 
 **Q: 想用自己的人工金标评估？**
 A: 把人工金标做成与 `gold/gold_triples.csv` 同列名（`head, relation, tail`）的 CSV，运行：
@@ -373,7 +376,7 @@ uv run python evaluate_kg.py --gold path/to/your_gold.csv
 ```
 
 **Q: 实体抽多了想精简？**
-A: 关掉论文实体挖掘 `uv run python run_extract.py --no-paper-entity-mine`，或调高频次门槛 `--paper-entity-min-freq 2`。
+A: 主基线已默认关掉论文实体挖掘，仅用领域词典 NER。如要启用且想抑制噪声，加 `--enable-paper-entity-mine --paper-entity-min-freq 2`。
 
 ---
 
@@ -464,3 +467,53 @@ Partial F1  (L3): P=0.8485  R=0.5954  F1=0.6998   ← 最高
 实体级 F1       : P=0.9932  R=0.6769  F1=0.8051
 关系 instance_of: P=0.9624  R=0.9009  F1=0.9306
 ```
+
+---
+
+## 12. 代码层精简（2026-05-13 第二轮）
+
+继银标淘汰后，进一步对抽取器代码做精简，剔除"零贡献 / 闲置"模块。
+
+### 12.1 三项动作
+
+| 动作 | 影响 |
+|------|------|
+| **删除 `CooccurrenceTypeExtractor`**（type_extractor.py ~75 行） | 评估时 0 贡献（产 score=0.50 全被阈值 0.55 砍掉）；其"实体收集"副作用用 30 行 helper 替代 |
+| **`paper_entity_recognizer.py` 归档** 到 `extractors/archive/` | 主基线默认禁用，从 `--no-paper-entity-mine` 反转为 `--enable-paper-entity-mine` |
+| **`svo_extractor` 默认禁用** | spaCy 模型未装时 0 条产出；装上后关系归一化噪声大，对 F1 无正向贡献 |
+
+### 12.2 关键新增：`collect_cooccurring_entities()` helper
+
+原 `CooccurrenceTypeExtractor` 真正起作用的部分**不是输出 triple**（全被阈值砍），而是**通过 triple 端点把"参与共现的实体"加入 observed_entities**，让 `TypeBasedExtractor` 能给这些实体打 `instance_of` 标签。
+
+新 helper 把这件事拆出来：
+- 扫描所有句子做 NER；
+- 检查类型对是否在白名单内（AIRCRAFT+PARAMETER、STRUCTURAL_COMPONENT+MATERIAL 等 8 对）；
+- 命中的实体加入 observed_entities；
+- **不产生任何 triple**。
+
+最终结果：
+- F1 0.6966 → 0.6949（仅微降 0.0017，TP=435 完全一致）；
+- 净减约 45 行代码；
+- 流水线运行时少跑 674 条无效共现 triple。
+
+### 12.3 各抽取器对 F1=0.6949 的贡献
+
+| 抽取器 | TP | 占比 | 状态 |
+|---|---|---|---|
+| **TypeBasedExtractor** (`instance_of`) | 409 | 94% | 主力 |
+| trigger_extractor | ~14 | 3% | 收紧后保留 |
+| pattern_extractor | ~7 | 2% | 高精度补充 |
+| numeric_extractor | ~5 | 1% | has_value 主力 |
+| ChapterMembershipExtractor | 0 | 0% | 评估屏蔽，但 app_qa 仍依赖 |
+| ~~CooccurrenceTypeExtractor~~ | — | — | **已删** |
+| ~~paper_entity_recognizer~~ | — | — | **已归档** |
+| svo_extractor | 0 | 0% | 默认禁用 |
+
+### 12.4 主要文件变更
+
+- `extractors/type_extractor.py`：删 `CooccurrenceTypeExtractor` 类，加 `collect_cooccurring_entities()`
+- `extractors/pipeline.py`：`PipelineConfig` 默认 `use_svo=False`、`mine_paper_entities=False`；删除 cooccur 相关配置和调用
+- `extractors/__init__.py`：移除 `CooccurrenceTypeExtractor` 和 `PaperEntityRecognizer` 导出
+- `extractors/archive/paper_entity_recognizer.py`：从 extractors/ 归档
+- `run_extract.py`：`--no-svo` → `--enable-svo`、`--no-paper-entity-mine` → `--enable-paper-entity-mine`

@@ -17,17 +17,16 @@ from .relation_normalizer import RelationNormalizer
 from .schema import Triple
 from .svo_extractor import DependencyExtractor
 from .trigger_extractor import TriggerCooccurrenceExtractor
-from .type_extractor import ChapterMembershipExtractor, CooccurrenceTypeExtractor, TypeBasedExtractor
+from .type_extractor import ChapterMembershipExtractor, TypeBasedExtractor, collect_cooccurring_entities
 
 
 @dataclass
 class PipelineConfig:
     use_trigger: bool = True
     use_pattern: bool = True
-    use_svo: bool = True
+    use_svo: bool = False  # 默认关闭：spaCy 模型未装时无产出；装上后噪声较大，无正向贡献
     use_numeric: bool = True
     use_type: bool = True
-    use_cooccur: bool = True
     use_chapter: bool = True
     use_llm: bool = True
 
@@ -38,11 +37,9 @@ class PipelineConfig:
 
     trigger_max_window: int = 30
     trigger_min_score: float = 0.55  # 调高（原 0.38）：FP 主要来自低分 trigger，详见审计
-    cooccur_max_pairs_per_sentence: int = 6
     spacy_model: str = "zh_core_web_sm"
     # 全局 score 阈值：所有 source 输出后统一过滤；为 0 时不过滤。
-    # type/numeric/pattern/instance_of 等高质量来源 score 通常 ≥ 0.6，几乎不受影响；
-    # 主要剔除 cooccur (0.5) 与低分 trigger。
+    # type/numeric/pattern/instance_of 等高质量来源 score 通常 ≥ 0.6，几乎不受影响。
     final_min_score: float = 0.55
 
     # 二阶段 LLM：在已有候选上根据正文补充「字面可核对」的新三元组（仅 openai 模式生效）
@@ -51,8 +48,9 @@ class PipelineConfig:
     llm_discovery_max_new_per_chapter: int = 40
     llm_discovery_max_existing_lines: int = 60
 
-    # 论文内实体挖掘：spaCy 命名实体 / 名词块 / 名名拼接 → 并入 HybridNER 词表，再跑触发词等
-    mine_paper_entities: bool = True
+    # 论文内实体挖掘：默认关闭。原模块已归档到 extractors/archive/paper_entity_recognizer.py。
+    # 实测发现长复合实体会"吞并"短实体造成 FP，主基线弃用。
+    mine_paper_entities: bool = False
     paper_entity_min_doc_freq: int = 1  # ≥2 可抑制一次性噪声词
 
     output_dir: str = "output"
@@ -93,15 +91,6 @@ class ExtractionPipeline:
         self.svo = DependencyExtractor(self.ner, self.normalizer, spacy_model=self.config.spacy_model)
         self.entities_by_type: dict[str, list[str]] = entities_by_type or {}
         self.type_ext = TypeBasedExtractor(self.entities_by_type) if self.entities_by_type else None
-        self.cooccur_ext = (
-            CooccurrenceTypeExtractor(
-                self.ner,
-                self.entities_by_type,
-                max_pairs_per_sentence=self.config.cooccur_max_pairs_per_sentence,
-            )
-            if self.entities_by_type
-            else None
-        )
         self.chapter_ext = (
             ChapterMembershipExtractor(self.ner, self.entities_by_type, min_occur=2)
             if self.entities_by_type
@@ -124,7 +113,14 @@ class ExtractionPipeline:
         mined_list: list[str] = []
         paper_mined_added = 0
         if self.config.mine_paper_entities:
-            from .paper_entity_recognizer import PaperEntityRecognizer
+            # 该模块已归档到 extractors/archive/，主基线默认关闭。
+            # 若要复用，从 archive 临时引入：
+            import sys
+            import os
+            _archive = os.path.join(os.path.dirname(__file__), "archive")
+            if _archive not in sys.path:
+                sys.path.insert(0, _archive)
+            from paper_entity_recognizer import PaperEntityRecognizer  # type: ignore
 
             before_vocab = len(self.ner.vocab_set)
             rec = PaperEntityRecognizer(spacy_model=self.config.spacy_model)
@@ -172,13 +168,6 @@ class ExtractionPipeline:
             if verbose:
                 print(f"[pipeline] svo 抽取: {len(svo)} 条")
 
-        if self.config.use_cooccur and self.cooccur_ext is not None:
-            co = self.cooccur_ext.extract_from_sentences(sentences)
-            triples.extend(co)
-            per_source["cooccur"] = len(co)
-            if verbose:
-                print(f"[pipeline] cooccur 抽取: {len(co)} 条")
-
         if self.config.use_chapter and self.chapter_ext is not None:
             ch = self.chapter_ext.extract_from_sentences(sentences)
             triples.extend(ch)
@@ -186,13 +175,18 @@ class ExtractionPipeline:
             if verbose:
                 print(f"[pipeline] chapter 抽取: {len(ch)} 条")
 
-        # 收集"已观察到的实体集合"——只允许真正在文中出现的实体进入 type_ext
+        # 收集"已观察到的实体集合"——只允许真正在文中出现的实体进入 type_ext。
+        # 来源 1：其他抽取器已经产出的 triple 端点；
+        # 来源 2：collect_cooccurring_entities —— 句子级类型对共现，弥补
+        #         "只在共现中出现、未被关系抽取器命中"的实体（不产 triple，仅作标签来源）。
         observed_entities: set[str] = set()
         for t in triples:
             observed_entities.add(t.head)
             observed_entities.add(t.tail)
-
         if self.config.use_type and self.type_ext is not None:
+            observed_entities |= collect_cooccurring_entities(
+                self.ner, sentences, self.entities_by_type
+            )
             self.type_ext.set_observed_entities(observed_entities)
             ty = self.type_ext.extract()
             triples.extend(ty)

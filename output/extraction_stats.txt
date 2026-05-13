@@ -1,24 +1,22 @@
 ==== 抽取统计 ====
 段落数: 438
 句子数: 1042
-实体数: 492
-三元组数: 1297
+实体数: 495
+三元组数: 1300
 
 ---- 按来源 (合并后) ----
   chapter: 474
-  type: 434
+  type: 437
   trigger: 238
-  pattern: 89
+  pattern: 92
   numeric: 48
   trigger+pattern: 6
   trigger+pattern+pattern: 4
-  pattern+cooccur: 2
   trigger+pattern+pattern+pattern: 1
-  pattern+cooccur+cooccur: 1
 
 ---- 按关系类型 (Top-30) ----
   discussed_in: 474
-  instance_of: 434
+  instance_of: 437
   has_part: 47
   has_value: 46
   located_at: 37
@@ -50,9 +48,7 @@
 
 ---- 按来源 (合并前) ----
   trigger: 950
-  cooccur: 674
   chapter: 474
-  type: 434
+  type: 437
   pattern: 124
   numeric: 57
-  svo: 0

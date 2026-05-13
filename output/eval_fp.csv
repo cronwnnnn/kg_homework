@@ -2,6 +2,7 @@
 10自由度动力学模型,instance_of,概念
 157度,located_at,双翼布局
 1倍弦长,instance_of,设计参数
+Boeing106,instance_of,飞行器
 CFD,combines_with,升力线理论
 NACA0012,instance_of,机翼构型
 NACA2412,instance_of,机翼构型
@@ -60,6 +61,7 @@ NextGenAeronautics,instance_of,组织机构
 机翼,has_part,桁架式结构
 机翼,located_at,失速
 机翼,transforms_to,活动机翼上表面前缘
+机翼弯矩,instance_of,设计参数
 梯形翼,instance_of,机翼构型
 气动中心,instance_of,概念
 气动力矩,affects,变体
@@ -70,6 +72,7 @@ NextGenAeronautics,instance_of,组织机构
 活动机翼,instance_of,机翼构型
 活动机翼,located_at,下机翼
 流动分离,causes,连杆
+苍鹭,instance_of,飞行器
 薄翼理论,instance_of,气动概念
 诱导阻力系数,depends_on,展弦比
 诱导阻力系数,has_part,连杆

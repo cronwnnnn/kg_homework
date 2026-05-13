@@ -10,14 +10,13 @@
 from .schema import Triple, Mention, RelationOntology
 from .preprocess import TextPreprocessor
 from .ner import HybridNER
-from .paper_entity_recognizer import PaperEntityRecognizer
 from .trigger_extractor import TriggerCooccurrenceExtractor
 from .pattern_extractor import PatternExtractor
 from .svo_extractor import DependencyExtractor
 from .numeric_extractor import NumericExtractor
 from .relation_normalizer import RelationNormalizer
 from .llm_enhancer import LLMEnhancer
-from .type_extractor import TypeBasedExtractor, CooccurrenceTypeExtractor, ChapterMembershipExtractor
+from .type_extractor import TypeBasedExtractor, ChapterMembershipExtractor
 from .pipeline import ExtractionPipeline
 
 __all__ = [
@@ -26,7 +25,6 @@ __all__ = [
     "RelationOntology",
     "TextPreprocessor",
     "HybridNER",
-    "PaperEntityRecognizer",
     "TriggerCooccurrenceExtractor",
     "PatternExtractor",
     "DependencyExtractor",
@@ -34,7 +32,6 @@ __all__ = [
     "RelationNormalizer",
     "LLMEnhancer",
     "TypeBasedExtractor",
-    "CooccurrenceTypeExtractor",
     "ChapterMembershipExtractor",
     "ExtractionPipeline",
 ]

@@ -1,9 +1,14 @@
-"""基于实体类型的关系抽取。
+"""基于实体类型 / 章节归属的关系抽取。
 
-包含三类：
-    1) TypeBasedExtractor：实体 → 类型标签 的 instance_of 关系。
-    2) CooccurrenceTypeExtractor：句子级共现 + 跨类型规则的关系。
-    3) ChapterMembershipExtractor：实体 → 章节标题 的 discussed_in 关系。
+包含两类：
+    1) TypeBasedExtractor：实体 → 类型标签 的 instance_of 关系（主力，贡献 94% TP）。
+    2) ChapterMembershipExtractor：实体 → 章节标题 的 discussed_in 关系（供 app_qa 章节问答使用）。
+
+辅助函数：
+    collect_cooccurring_entities(ner, sentences, entities_by_type) → 收集
+        "句子级同类型对"的实体，喂给 TypeBasedExtractor.set_observed_entities 用。
+        原 CooccurrenceTypeExtractor 的"产 has_parameter/made_of 等 triple"已删除，
+        但实体收集副作用保留，否则 instance_of 召回会损失约 6%。
 """
 
 from __future__ import annotations
@@ -14,6 +19,54 @@ from typing import Iterable, Sequence
 from .ner import HybridNER
 from .preprocess import Sentence
 from .schema import Triple
+
+
+# 用于 collect_cooccurring_entities：满足任一类型对的实体进入 observed
+_COOCCUR_TYPE_PAIRS: set[tuple[str, str]] = {
+    ("AIRCRAFT", "PARAMETER"),
+    ("AIRCRAFT", "PERFORMANCE_METRIC"),
+    ("AIRCRAFT", "WING_CONFIGURATION"),
+    ("AIRCRAFT", "MATERIAL"),
+    ("AIRCRAFT", "STRUCTURAL_COMPONENT"),
+    ("STRUCTURAL_COMPONENT", "MATERIAL"),
+    ("PERSON", "ORGANIZATION"),
+    ("TECHNOLOGY", "AIRCRAFT"),
+}
+# 加入反向
+_COOCCUR_TYPE_PAIRS = _COOCCUR_TYPE_PAIRS | {(b, a) for a, b in _COOCCUR_TYPE_PAIRS}
+
+
+def collect_cooccurring_entities(
+    ner: HybridNER,
+    sentences: Iterable[Sentence],
+    entities_by_type: dict[str, Sequence[str]],
+) -> set[str]:
+    """扫描所有句子，把"同句出现且类型对在白名单内"的实体收集起来。
+
+    用途：弥补"只在共现中出现、未被任何关系抽取器命中"的实体，让 TypeBasedExtractor
+    能给它们打 instance_of 标签（这是 F1 主力贡献的关键）。
+    """
+    term_to_type: dict[str, str] = {}
+    for type_name, items in entities_by_type.items():
+        for w in items:
+            w = (w or "").strip()
+            if w:
+                term_to_type.setdefault(w, type_name)
+
+    observed: set[str] = set()
+    for sent in sentences:
+        typed = [(m.text, t) for m in ner.extract(sent.text)
+                 if (t := term_to_type.get(m.text)) is not None]
+        if len(typed) < 2:
+            continue
+        for i, (a_text, a_type) in enumerate(typed):
+            for b_text, b_type in typed[i + 1:]:
+                if a_text == b_text:
+                    continue
+                if (a_type, b_type) in _COOCCUR_TYPE_PAIRS:
+                    observed.add(a_text)
+                    observed.add(b_text)
+    return observed
 
 
 _TYPE_LABEL_MAP: dict[str, str] = {
@@ -32,22 +85,6 @@ _TYPE_LABEL_MAP: dict[str, str] = {
     "EQUATION": "公式",
     "CONCEPT": "概念",
 }
-
-# 跨类型规则：(left_type, right_type, relation)
-# 这些关系仅靠 "类型 + 同句共现" 推得，准确率本身就低于触发词抽取。
-# 因此：
-#   - 选择"语义弱、容错度高"的关系名（has_parameter / has_performance / co_occurs_with）；
-#   - 涉及"研发/制造/控制"等强语义动作的，留给 trigger / pattern 抽取，cooccur 不做。
-_CROSS_TYPE_RULES: list[tuple[str, str, str]] = [
-    ("AIRCRAFT", "PARAMETER", "has_parameter"),
-    ("AIRCRAFT", "PERFORMANCE_METRIC", "has_performance"),
-    ("AIRCRAFT", "WING_CONFIGURATION", "has_configuration"),
-    ("AIRCRAFT", "MATERIAL", "uses_material"),
-    ("AIRCRAFT", "STRUCTURAL_COMPONENT", "has_part"),
-    ("STRUCTURAL_COMPONENT", "MATERIAL", "made_of"),
-    ("PERSON", "ORGANIZATION", "affiliated_with"),
-    ("TECHNOLOGY", "AIRCRAFT", "applied_to"),
-]
 
 
 class TypeBasedExtractor:
@@ -86,89 +123,6 @@ class TypeBasedExtractor:
                     )
                 )
         return triples
-
-
-class CooccurrenceTypeExtractor:
-    """句子级共现 + 跨类型规则。
-
-    工作原理：
-        1) 先用 NER 在每个句子中识别词典实体；
-        2) 在同一个句子里，对所有不同类型对的实体两两组合；
-        3) 若类型对命中 _CROSS_TYPE_RULES，则产生一条三元组。
-    """
-
-    def __init__(
-        self,
-        ner: HybridNER,
-        entities_by_type: dict[str, Sequence[str]],
-        max_pairs_per_sentence: int = 8,
-    ) -> None:
-        self.ner = ner
-        self.max_pairs_per_sentence = max_pairs_per_sentence
-        # 反向索引：词 → 类型
-        self._term_to_type: dict[str, str] = {}
-        for type_name, items in entities_by_type.items():
-            for w in items:
-                w = (w or "").strip()
-                if not w:
-                    continue
-                self._term_to_type.setdefault(w, type_name)
-
-        # 规则集查表：(left_type, right_type) → relation
-        self._rule_map: dict[tuple[str, str], str] = {(s, t): r for s, t, r in _CROSS_TYPE_RULES}
-        # 也允许反向
-        self._reverse_rule_map: dict[tuple[str, str], str] = {(t, s): r for s, t, r in _CROSS_TYPE_RULES}
-
-    def extract_from_sentence(self, sent: Sentence) -> list[Triple]:
-        mentions = self.ner.extract(sent.text)
-        if len(mentions) < 2:
-            return []
-        triples: list[Triple] = []
-        seen: set[tuple[str, str, str]] = set()
-        # 按出现顺序选实体并分配类型
-        typed: list[tuple[str, str]] = []
-        for m in mentions:
-            t = self._term_to_type.get(m.text)
-            if t is None:
-                continue
-            typed.append((m.text, t))
-        # 限制每句关系数量（抑制噪声）
-        budget = self.max_pairs_per_sentence
-        for i in range(len(typed)):
-            for j in range(len(typed)):
-                if i == j or budget <= 0:
-                    continue
-                a_text, a_type = typed[i]
-                b_text, b_type = typed[j]
-                if a_text == b_text:
-                    continue
-                rel = self._rule_map.get((a_type, b_type))
-                if rel is None:
-                    continue
-                key = (a_text, rel, b_text)
-                if key in seen:
-                    continue
-                seen.add(key)
-                triples.append(
-                    Triple(
-                        head=a_text,
-                        relation=rel,
-                        tail=b_text,
-                        trigger=f"cooccur:{a_type}->{b_type}",
-                        source="cooccur",
-                        score=0.50,
-                        chapter=sent.chapter,
-                        sentence=sent.text,
-                    )
-                )
-                budget -= 1
-        return triples
-
-    def extract_from_sentences(self, sentences: Iterable[Sentence]) -> list[Triple]:
-        out: list[Triple] = []
-        for s in sentences:
-            out.extend(self.extract_from_sentence(s))
-        return out
 
 
 class ChapterMembershipExtractor:
