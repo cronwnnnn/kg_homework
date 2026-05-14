@@ -5,18 +5,18 @@
 > **课程目标**：概念 ≥500、关系 ≥1000、人工金标 ≥400 关系做评估。
 >
 > **当前规模**：
-> - 领域词典实体 **1491** 个（`ans.py` / `data/entities_by_type.json`）
-> - 自动抽取实体 **502** 个，三元组 **1367** 条（收紧版 + 依存句法增强，无 LLM）
+> - 领域词典实体 **1473** 个（`data/entities_by_type.json`，含 269 条调优词，比 `ans.py` 源码多）
+> - 自动抽取实体 **503** 个，三元组 **1367** 条（收紧版 + 依存句法增强，无 LLM）
 > - 第四章人工金标 **745** 条（`gold/gold_triples_augmented.csv`）
 >
-> **第四章金标指标**（最新评估，基于 745 条金标 + 5 算法主基线 pred）：
+> **第四章金标指标**（最新评估，基于 745 条金标 + 6 算法主基线 pred）：
 >
 > | 口径 | Precision | Recall | F1 |
 > |------|-----------|--------|----|
-> | 严格 F1 (L1) | 0.8108 | 0.5954 | **0.6866** |
-> | 宽松 F1 (L2) | 0.8123 | 0.5962 | **0.6876** |
-> | Partial F1 (L3) | 0.8145 | 0.5981 | **0.6897** |
-> | 实体级 F1 | 0.9823 | 0.6846 | **0.8069** |
+> | 严格 F1 (L1) | 0.8074 | 0.5940 | **0.6845** |
+> | 宽松 F1 (L2) | 0.8089 | 0.5948 | **0.6855** |
+> | Partial F1 (L3) | 0.8148 | 0.5995 | **0.6907** |
+> | 实体级 F1 | 0.9824 | 0.6862 | **0.8080** |
 >
 > `instance_of` 关系做到 P=0.94 R=0.90 **F1=0.92**。
 >
@@ -110,7 +110,7 @@ uv run python run_all.py
 # 跑通后可视化
 uv run streamlit run app_streamlit.py
 
-# 使用 OpenAI 兼容 API（DeepSeek/Kimi/智谱等）启用 LLM 发现补全（推荐配置）
+# 使用 OpenAI 兼容 API（DeepSeek/Kimi/智谱等）启用 LLM 发现补全（可选）
 set OPENAI_API_KEY=sk-xxx
 set OPENAI_BASE_URL=https://api.deepseek.com/v1
 set OPENAI_MODEL=deepseek-chat
@@ -121,9 +121,11 @@ uv run python run_extract.py --entities-json data/entities_by_type.json --llm op
 
 `run_all.py` 依次完成：
 
-1. **导出词典 JSON**（`tools/export_entities_by_type_json.py`）
+1. **复用或生成词典 JSON**：若 `data/entities_by_type.json` 已存在则**复用**（避免覆盖调优词典）；缺失时才从 `ans.py` 一次性导出。强制重生加 `--regen-vocab`。
 2. **抽取**（`run_extract.py --entities-json data/entities_by_type.json`）
 3. **评估**（`evaluate_kg.py`，默认用 `gold/gold_triples_augmented.csv` 做第四章金标评估）
+
+> ⚠️ **重要**：`ans.py` 的 `EntityLibrary` 是早期人工词典源（1222 词），而 `data/entities_by_type.json` 是经过实验调优的运行时词典（**1473 词**，多 269 条调优词）。`run_all.py` 默认不会覆盖 JSON。**如果你看到三元组数突然从 1367 跌到 1113，多半是词典被 `ans.py` 覆盖了**，执行 `git checkout HEAD -- data/entities_by_type.json` 即可恢复。
 
 也可分步运行：
 
@@ -239,26 +241,26 @@ uv run python main.py app            # 启动可视化
 | Partial F1 (L3) | 关系一致 + head/tail 双向子串匹配（min_len=2） | 反映真实语义匹配水平 |
 | 实体级 F1 | 实体集合的 P/R/F1 | 概念覆盖能力 |
 
-### 5.2 当前指标（基于 `gold/gold_triples_augmented.csv` 745 条 + 5 算法主基线 pred 1367 条，含依存句法增强）
+### 5.2 当前指标（基于 `gold/gold_triples_augmented.csv` 745 条 + 6 算法主基线 pred 1367 条，含依存句法增强）
 
 ```
-严格 F1   (L1):  P=0.8108  R=0.5954  F1=0.6866  TP=437  pred=539  gold=734
-宽松 F1   (L2):  P=0.8123  R=0.5962  F1=0.6876  TP=437
-Partial F1 (L3): P=0.8145  R=0.5981  F1=0.6897  TP=439   ← 最高
-实体级 F1:       P=0.9823  R=0.6846  F1=0.8069  TP=445  pred_ent=453  gold_ent=650
+严格 F1   (L1):  P=0.8074  R=0.5940  F1=0.6845  TP=436  pred=540  gold=734
+宽松 F1   (L2):  P=0.8089  R=0.5948  F1=0.6855  TP=436
+Partial F1 (L3): P=0.8148  R=0.5995  F1=0.6907  TP=440   ← 最高
+实体级 F1:       P=0.9824  R=0.6862  F1=0.8080  TP=446  pred_ent=454  gold_ent=650
 ```
 
 **关系级 Top-5（按 gold 频次）**：
 
 | 关系 | pred | gold | TP | P | R | F1 |
 |---|---|---|---|---|---|---|
-| `instance_of` | 435 | 454 | 409 | 0.940 | 0.901 | **0.920** |
-| `has_value` | 12 | 51 | 6 | 0.500 | 0.118 | 0.190 |
+| `instance_of` | 436 | 454 | 409 | 0.938 | 0.901 | **0.919** |
+| `has_value` | 12 | 51 | 5 | 0.417 | 0.098 | 0.159 |
 | `has_part` | 17 | 42 | 7 | 0.412 | 0.167 | 0.237 |
 | `located_at` | 19 | 23 | 6 | 0.316 | 0.261 | 0.286 |
 | `generates` | 14 | 11 | 6 | 0.429 | 0.545 | **0.480** |
 
-**TP / FP / FN 总览**：TP=437, FP=102, FN=297
+**TP / FP / FN 总览**：TP=436, FP=104, FN=298
 
 ### 5.3 错误样本明细
 
@@ -380,7 +382,7 @@ uv run streamlit run app_qa/app.py
 
 | 要求 | 阈值 | 当前 | 状态 |
 |---|---|---|---|
-| 概念（实体） | ≥500 | **1491**（领域词典） / **502**（实际抽取） | ✓ 满足（×3.0） |
+| 概念（实体） | ≥500 | **1473**（领域词典） / **503**（实际抽取） | ✓ 满足（×2.9） |
 | 关系（三元组） | ≥1000 | **1367**（含依存句法增强）| ✓ 满足（×1.4） |
 | 人工金标关系 | ≥400 | **745**（`gold_triples_augmented.csv`） | ✓ 满足（×1.9） |
 | 自动抽取算法源代码 | 必须 | `extractors/` 内 6 个算法（含 `dependency_re.py`）+ LLM 增强 + 流水线 | ✓ 提供 |
@@ -696,3 +698,67 @@ class DependencyREExtractor:
 
 - 想要**最高 F1（0.6965）**：加 `--no-dep-re` 关闭依存句法
 - 想要**最丰富的图谱（1367 条 + 关系更均衡）**：保持默认（已开启）
+
+---
+
+## 15. 运行注意事项与排错（必读）
+
+### 15.1 词典同步陷阱
+
+`ans.py`（**人工源码词典 1222 词**）和 `data/entities_by_type.json`（**运行时词典 1473 词**）**不同步**：
+- `data/entities_by_type.json` 比 `ans.py` 多 269 个调优实体（来自历史 LLM NER 实验 + 长 NP 调优）
+- 项目以 `data/entities_by_type.json` 为**运行时真理源**
+
+`run_all.py` 默认**仅在 JSON 缺失时**从 `ans.py` 重新生成，避免覆盖调优词典。如果你看到：
+- 词典从 1473 跌到 1204
+- 三元组从 1367 跌到 1113
+- F1 从 0.68 跌到 0.57
+
+那一定是 JSON 被错误地覆盖了。**一行修复**：
+
+```bash
+git checkout HEAD -- data/entities_by_type.json
+```
+
+强制从 `ans.py` 重新生成请加：
+
+```bash
+uv run python run_all.py --regen-vocab
+```
+
+### 15.2 PowerShell 中文参数乱码
+
+Windows PowerShell 5.1 默认 GBK 编码，给 `evaluate_kg.py` 传 `--chapter "第4章"` 时可能乱码（显示为 `--chapter �?`）。**解决方法**：
+
+```powershell
+$env:PYTHONIOENCODING="utf-8"   # 设环境变量
+```
+
+或用 `run_all.py` 一键运行（它内部用 `subprocess.call` 传参数，不走 shell）。
+
+### 15.3 spaCy 模型缺失
+
+若运行时报：
+```
+Can't find model 'zh_core_web_sm'
+```
+
+依存句法抽取器 `DependencyREExtractor` 会自动跳过（fallback 为空），但**会损失约 67 条三元组**。安装模型：
+
+```bash
+uv run python -m spacy download zh_core_web_sm
+```
+
+或临时关闭 dep_re：`run_extract.py --no-dep-re`。
+
+### 15.4 临时文件清理
+
+调试时产生的 `_tmp_*.py`、`output/eval_ab_*.txt`、`output/eval_report_no_dep.txt`、`output/triples_with_meta_no_dep.csv` 等临时文件不应入库。已在 commit 中清理。`__pycache__/` 由 `.gitignore` 排除。
+
+### 15.5 应用启动失败
+
+`app_qa/app.py` 启动时如果报 `aliases.json` / `gold_*.csv` 找不到，通常是工作目录不对。所有路径已改为绝对路径（`_resolve_path`），从仓库根目录启动即可：
+
+```bash
+uv run streamlit run app_qa/app.py     # 从仓库根目录
+```
