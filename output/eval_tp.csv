@@ -88,6 +88,7 @@ Z字形折叠翼,instance_of,机翼构型
 副翼偏转,generates,俯仰力矩
 副翼偏转,generates,额外俯仰力矩
 副翼偏转,generates,额外气动力
+副翼偏转,has_value,3200N·m
 副翼偏转,instance_of,控制方法
 副翼偏转角度,instance_of,设计参数
 副翼差动,instance_of,控制方法

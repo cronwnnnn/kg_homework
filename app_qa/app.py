@@ -49,21 +49,122 @@ def _resolve_path(p: str) -> str:
 
 
 _TYPE_COLOR: dict[str, str] = {
-    "AIRCRAFT": "#4a9eff",
-    "WING_CONFIGURATION": "#3ad29f",
-    "PARAMETER": "#f8c537",
-    "AERODYNAMIC_CONCEPT": "#ff7f50",
-    "STRUCTURAL_COMPONENT": "#9b59b6",
-    "CONTROL_METHOD": "#e74c3c",
-    "PERFORMANCE_METRIC": "#1abc9c",
-    "ORGANIZATION": "#34495e",
-    "PERSON": "#e67e22",
-    "TECHNOLOGY": "#2980b9",
-    "MATERIAL": "#16a085",
-    "FLIGHT_PHASE": "#d35400",
-    "EQUATION": "#7f8c8d",
-    "CONCEPT": "#c0392b",
-    "_UNKNOWN_": "#bbbbbb",
+    "AIRCRAFT":             "#4a90e2",
+    "WING_CONFIGURATION":   "#48b884",
+    "PARAMETER":            "#e8b339",
+    "AERODYNAMIC_CONCEPT":  "#ec8064",
+    "STRUCTURAL_COMPONENT": "#9b7bd4",
+    "CONTROL_METHOD":       "#e36a7e",
+    "PERFORMANCE_METRIC":   "#3eafa8",
+    "ORGANIZATION":         "#7a8fa6",
+    "PERSON":               "#e6925e",
+    "TECHNOLOGY":           "#5b8fd6",
+    "MATERIAL":             "#5ba994",
+    "FLIGHT_PHASE":         "#d18752",
+    "EQUATION":             "#9aa5b1",
+    "CONCEPT":              "#c97485",
+    "_UNKNOWN_":            "#b8c1cc",
+}
+
+
+_TYPE_LABEL_ZH: dict[str, str] = {
+    "AIRCRAFT": "飞行器",
+    "WING_CONFIGURATION": "机翼构型",
+    "PARAMETER": "参数",
+    "AERODYNAMIC_CONCEPT": "气动概念",
+    "STRUCTURAL_COMPONENT": "结构部件",
+    "CONTROL_METHOD": "控制方法",
+    "PERFORMANCE_METRIC": "性能指标",
+    "ORGANIZATION": "组织",
+    "PERSON": "人物",
+    "TECHNOLOGY": "技术",
+    "MATERIAL": "材料",
+    "FLIGHT_PHASE": "飞行阶段",
+    "EQUATION": "方程/公式",
+    "CONCEPT": "概念",
+    "_UNKNOWN_": "未识别",
+}
+
+
+_REL_GROUP: dict[str, tuple[str, str, str]] = {
+    "instance_of":          ("分类层级", "#5b6ee1", "solid"),
+    "is_a":                 ("分类层级", "#5b6ee1", "solid"),
+
+    "has_part":             ("组成结构", "#4a89dc", "solid"),
+    "part_of":              ("组成结构", "#4a89dc", "solid"),
+    "connected_to":         ("组成结构", "#4a89dc", "solid"),
+    "combines_with":        ("组成结构", "#4a89dc", "solid"),
+
+    "causes":               ("因果影响", "#e8804b", "solid"),
+    "leads_to":             ("因果影响", "#e8804b", "solid"),
+    "affects":              ("因果影响", "#e8804b", "dashed"),
+    "generates":            ("因果影响", "#e8804b", "solid"),
+    "provides":             ("因果影响", "#e8804b", "solid"),
+
+    "improves":             ("性能改善", "#37b87f", "solid"),
+    "enhances":             ("性能改善", "#37b87f", "solid"),
+    "satisfies":            ("性能改善", "#37b87f", "solid"),
+    "verifies":             ("性能改善", "#37b87f", "dashed"),
+
+    "reduces":              ("性能下降", "#e85d75", "solid"),
+    "solves":               ("性能下降", "#e85d75", "solid"),
+
+    "has_value":            ("数值比较", "#c2a663", "solid"),
+    "greater_than":         ("数值比较", "#c2a663", "solid"),
+    "less_than":            ("数值比较", "#c2a663", "solid"),
+    "equals_to":            ("数值比较", "#c2a663", "solid"),
+    "greater_than_value":   ("数值比较", "#c2a663", "solid"),
+    "less_than_value":      ("数值比较", "#c2a663", "solid"),
+    "approximately":        ("数值比较", "#c2a663", "dashed"),
+
+    "controls":             ("控制驱动", "#3eafa8", "solid"),
+    "controlled_by":        ("控制驱动", "#3eafa8", "solid"),
+    "drives":               ("控制驱动", "#3eafa8", "solid"),
+    "driven_by":            ("控制驱动", "#3eafa8", "solid"),
+    "actuated_by":          ("控制驱动", "#3eafa8", "solid"),
+
+    "used_for":             ("使用应用", "#7a8fa6", "solid"),
+    "uses_method":          ("使用应用", "#7a8fa6", "solid"),
+    "applied_to":           ("使用应用", "#7a8fa6", "solid"),
+    "implements":           ("使用应用", "#7a8fa6", "solid"),
+    "needs":                ("使用应用", "#7a8fa6", "dashed"),
+    "depends_on":           ("使用应用", "#7a8fa6", "dashed"),
+    "enables":              ("使用应用", "#7a8fa6", "solid"),
+
+    "develops":             ("开发研制", "#9166cc", "solid"),
+    "developed_by":         ("开发研制", "#9166cc", "solid"),
+    "manufactures":         ("开发研制", "#9166cc", "solid"),
+    "originates_from":      ("开发研制", "#9166cc", "dashed"),
+
+    "located_at":           ("位置变换", "#b08968", "solid"),
+    "contains":             ("位置变换", "#b08968", "solid"),
+    "transforms_to":        ("位置变换", "#b08968", "solid"),
+    "transformed_from":     ("位置变换", "#b08968", "solid"),
+    "generated_by":         ("位置变换", "#b08968", "solid"),
+
+    "discussed_in":         ("章节归属", "#a0a8b3", "dashed"),
+    "co_occurs_with":       ("章节归属", "#a0a8b3", "dashed"),
+}
+
+
+_REL_DEFAULT = ("其他", "#9aa5b1", "solid")
+
+
+def _rel_style(relation: str) -> tuple[str, str, str]:
+    return _REL_GROUP.get(relation, _REL_DEFAULT)
+
+
+_THEME = {
+    "bg":          "#ffffff",
+    "panel_bg":    "#f7f9fc",
+    "node_text":   "#1f2933",
+    "edge_text":   "#5a6573",
+    "muted":       "#8a96a3",
+    "center_ring": "#ff9f43",
+    "center_text": "#3d2c00",
+    "highlight":   "#ffb84d",
+    "node_border": "#d6dde6",
+    "edge_default":"#cbd2dc",
 }
 
 
@@ -148,6 +249,14 @@ def _build_visual_graph(
     return g
 
 
+def _hex_to_rgba(hex_color: str, alpha: float) -> str:
+    h = hex_color.lstrip("#")
+    if len(h) != 6:
+        return f"rgba(180,180,180,{alpha})"
+    r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+    return f"rgba({r},{g},{b},{alpha})"
+
+
 def to_pyvis_html(
     g: nx.MultiDiGraph,
     ent_types: dict[str, str],
@@ -155,45 +264,186 @@ def to_pyvis_html(
     highlight_pairs: set[tuple[str, str]],
 ) -> str:
     net = Network(
-        height="640px",
+        height="660px",
         width="100%",
         directed=True,
-        bgcolor="#0f1419",
-        font_color="#eeeeee",
+        bgcolor=_THEME["bg"],
+        font_color=_THEME["node_text"],
     )
-    net.barnes_hut(gravity=-7000, central_gravity=0.3, spring_length=130, spring_strength=0.05)
+    net.set_options("""
+    {
+      "interaction": {
+        "hover": true,
+        "tooltipDelay": 80,
+        "navigationButtons": false,
+        "zoomView": true,
+        "dragNodes": true
+      },
+      "physics": {
+        "enabled": true,
+        "stabilization": { "enabled": true, "iterations": 220, "fit": true },
+        "barnesHut": {
+          "gravitationalConstant": -9000,
+          "centralGravity": 0.18,
+          "springLength": 160,
+          "springConstant": 0.035,
+          "damping": 0.55,
+          "avoidOverlap": 0.6
+        },
+        "minVelocity": 0.6,
+        "timestep": 0.45
+      },
+      "nodes": {
+        "shape": "dot",
+        "borderWidth": 1.5,
+        "borderWidthSelected": 3,
+        "shadow": {
+          "enabled": true,
+          "color": "rgba(70,90,120,0.18)",
+          "size": 12,
+          "x": 0,
+          "y": 4
+        },
+        "font": {
+          "face": "Inter, 'PingFang SC', 'Microsoft YaHei', sans-serif",
+          "color": "#1f2933",
+          "strokeWidth": 4,
+          "strokeColor": "rgba(255,255,255,0.95)"
+        }
+      },
+      "edges": {
+        "smooth": {
+          "enabled": true,
+          "type": "continuous",
+          "roundness": 0.32
+        },
+        "arrows": {
+          "to": { "enabled": true, "scaleFactor": 0.55, "type": "arrow" }
+        },
+        "font": {
+          "face": "Inter, 'PingFang SC', 'Microsoft YaHei', sans-serif",
+          "color": "#5a6573",
+          "size": 11,
+          "strokeWidth": 3,
+          "strokeColor": "rgba(255,255,255,0.95)",
+          "align": "middle"
+        },
+        "selectionWidth": 1.4,
+        "hoverWidth": 1.2
+      }
+    }
+    """)
 
     for n in g.nodes():
         t = ent_types.get(n) or "_UNKNOWN_"
         color = _TYPE_COLOR.get(t, _TYPE_COLOR["_UNKNOWN_"])
         is_center = (n == center)
-        is_hl = any(n == a or n == b for a, b in highlight_pairs)
-        size = 32 if is_center else (22 if is_hl else 16)
-        border = "#ffd54a" if is_center else ("#ff6b6b" if is_hl else "#444")
+        is_hl = (not is_center) and any(n == a or n == b for a, b in highlight_pairs)
+
+        bg = color
+        hover_bg = color
+        border = _THEME["node_border"]
+        font_color = _THEME["node_text"]
+        size = 18
+        font_size = 13
+
+        if is_center:
+            bg = color
+            border = _THEME["center_ring"]
+            font_color = _THEME["center_text"]
+            size = 34
+            font_size = 17
+        elif is_hl:
+            border = _THEME["highlight"]
+            size = 24
+            font_size = 14
+
+        type_zh = _TYPE_LABEL_ZH.get(t, t)
+        deg = g.degree(n)
+        tooltip = (
+            f"<div style='font-family:Inter,sans-serif;'>"
+            f"<div style='font-size:14px;font-weight:600;color:#1f2933'>{n}</div>"
+            f"<div style='font-size:12px;color:#5a6573;margin-top:2px'>类型: {type_zh}</div>"
+            f"<div style='font-size:12px;color:#8a96a3;margin-top:2px'>邻接度: {deg}</div>"
+            f"</div>"
+        )
+
         net.add_node(
             n,
             label=n,
-            title=f"{n}\n类型: {t if t != '_UNKNOWN_' else '未识别'}",
-            color={"background": color, "border": border},
+            title=tooltip,
+            color={
+                "background": bg,
+                "border": border,
+                "highlight": {"background": hover_bg, "border": _THEME["center_ring"]},
+                "hover": {"background": hover_bg, "border": _THEME["highlight"]},
+            },
             size=size,
-            borderWidth=3 if (is_center or is_hl) else 1,
-            font={"size": 17 if is_center else (14 if is_hl else 12), "color": "#eee"},
+            borderWidth=3.5 if is_center else (2.5 if is_hl else 1.5),
+            font={
+                "size": font_size,
+                "color": font_color,
+                "face": "Inter, 'PingFang SC', 'Microsoft YaHei', sans-serif",
+                "strokeWidth": 4,
+                "strokeColor": "rgba(255,255,255,0.95)",
+            },
         )
 
+    edge_seen: dict[tuple[str, str, str], int] = {}
     for u, v, _k, data in g.edges(keys=True, data=True):
         lab = data.get("label", "")
         sc = data.get("score", 1.0)
         src = data.get("source", "")
-        is_hl = data.get("_hl") or ((u, v) in highlight_pairs) or ((v, u) in highlight_pairs)
-        title = f"{u} --[{lab}]--> {v}\nscore={sc:.2f}  source={src}"
+        is_hl = bool(data.get("_hl")) or ((u, v) in highlight_pairs) or ((v, u) in highlight_pairs)
+
+        group_name, group_color, dash = _rel_style(lab)
+        edge_color = _THEME["highlight"] if is_hl else group_color
+        edge_color_rgba = edge_color if is_hl else _hex_to_rgba(edge_color, 0.78)
+
+        if is_hl:
+            width = 3.2
+        elif sc >= 0.85:
+            width = 2.0
+        elif sc >= 0.65:
+            width = 1.5
+        else:
+            width = 1.0
+
+        pair_key = (u, v, lab)
+        edge_seen[pair_key] = edge_seen.get(pair_key, 0) + 1
+        smooth_type = "curvedCW" if edge_seen[pair_key] % 2 else "curvedCCW"
+        roundness = 0.18 + 0.12 * (edge_seen[pair_key] - 1)
+        if roundness > 0.7:
+            roundness = 0.7
+
+        tooltip_edge = (
+            f"<div style='font-family:Inter,sans-serif;'>"
+            f"<div style='font-size:13px;color:#1f2933'>"
+            f"<span style='font-weight:600'>{u}</span>"
+            f" <span style='color:{group_color};font-weight:600'>{lab}</span> "
+            f"<span style='font-weight:600'>{v}</span></div>"
+            f"<div style='font-size:11px;color:#5a6573;margin-top:3px'>"
+            f"语义组: {group_name}　·　score={sc:.2f}　·　source={src or '-'}"
+            f"</div></div>"
+        )
+
         net.add_edge(
             u, v,
-            title=title,
-            label=lab[:18] + ("…" if len(lab) > 18 else ""),
-            color="#ffd54a" if is_hl else "#888",
-            width=3 if is_hl else 1,
-            font={"size": 11, "color": "#cccccc"},
-            arrows={"to": {"enabled": True}},
+            title=tooltip_edge,
+            label=lab[:14] + ("…" if len(lab) > 14 else ""),
+            color={"color": edge_color_rgba, "highlight": _THEME["highlight"], "hover": _THEME["highlight"]},
+            width=width,
+            dashes=(dash == "dashed"),
+            smooth={"enabled": True, "type": smooth_type, "roundness": roundness},
+            font={
+                "size": 11 if not is_hl else 12,
+                "color": _THEME["edge_text"] if not is_hl else "#b46300",
+                "face": "Inter, 'PingFang SC', 'Microsoft YaHei', sans-serif",
+                "strokeWidth": 3,
+                "strokeColor": "rgba(255,255,255,0.95)",
+                "align": "middle",
+            },
+            arrows={"to": {"enabled": True, "scaleFactor": 0.55, "type": "arrow"}},
         )
     try:
         return net.generate_html(notebook=False)
@@ -307,23 +557,71 @@ def _render_right_panel(
     g = _build_visual_graph(kg, seed, highlight, hops, max_nodes)
     hl_pairs = {(t.head, t.tail) for t in highlight}
     html = to_pyvis_html(g, ent_types, seed, hl_pairs)
-    st.components.v1.html(html, height=660, scrolling=False)
-    st.caption(
-        f"中心: **{seed}** | BFS 跳数: {hops} | 节点数: {g.number_of_nodes()} | "
-        f"边数: {g.number_of_edges()} | 高亮主答案边: {len(highlight)}"
+
+    st.markdown(
+        "<div style='border:1px solid #e4e9f0;border-radius:10px;background:#ffffff;"
+        "padding:6px;box-shadow:0 1px 4px rgba(70,90,120,0.06);margin-top:4px'>",
+        unsafe_allow_html=True,
     )
+    st.components.v1.html(html, height=680, scrolling=False)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    metric_cols = st.columns(4)
+    metric_cols[0].markdown(f"<div style='font-size:12px;color:#8a96a3'>中心实体</div>"
+                            f"<div style='font-size:14px;font-weight:600;color:#1f2933'>{seed}</div>",
+                            unsafe_allow_html=True)
+    metric_cols[1].markdown(f"<div style='font-size:12px;color:#8a96a3'>BFS 跳数</div>"
+                            f"<div style='font-size:14px;font-weight:600;color:#1f2933'>{hops}</div>",
+                            unsafe_allow_html=True)
+    metric_cols[2].markdown(f"<div style='font-size:12px;color:#8a96a3'>节点 / 边数</div>"
+                            f"<div style='font-size:14px;font-weight:600;color:#1f2933'>"
+                            f"{g.number_of_nodes()} / {g.number_of_edges()}</div>",
+                            unsafe_allow_html=True)
+    metric_cols[3].markdown(f"<div style='font-size:12px;color:#8a96a3'>高亮主答案边</div>"
+                            f"<div style='font-size:14px;font-weight:600;color:#1f2933'>{len(highlight)}</div>",
+                            unsafe_allow_html=True)
 
     type_set = sorted({ent_types.get(n) or "_UNKNOWN_" for n in g.nodes()})
-    with st.expander("图例 · 颜色 / 类型", expanded=False):
+    rel_set: dict[str, tuple[str, str]] = {}
+    for _u, _v, _k, ed in g.edges(keys=True, data=True):
+        rel = ed.get("label", "")
+        if not rel:
+            continue
+        group_name, group_color, _ = _rel_style(rel)
+        rel_set.setdefault(group_name, (group_color, rel))
+
+    with st.expander("图例 · 节点类型与关系语义", expanded=False):
+        st.markdown("<div style='font-size:12px;color:#5a6573;margin-bottom:6px'><b>节点类型</b></div>",
+                    unsafe_allow_html=True)
         cols = st.columns(4)
         for i, tname in enumerate(type_set):
             c = _TYPE_COLOR.get(tname, _TYPE_COLOR["_UNKNOWN_"])
-            display = tname if tname != "_UNKNOWN_" else "未识别"
+            display = _TYPE_LABEL_ZH.get(tname, tname)
             cols[i % 4].markdown(
-                f"<span style='display:inline-block;width:12px;height:12px;"
-                f"background:{c};border-radius:50%;margin-right:6px'></span>{display}",
+                f"<div style='display:flex;align-items:center;margin:3px 0;'>"
+                f"<span style='display:inline-block;width:14px;height:14px;"
+                f"background:{c};border-radius:50%;margin-right:8px;"
+                f"box-shadow:0 1px 2px rgba(70,90,120,0.18)'></span>"
+                f"<span style='font-size:12px;color:#1f2933'>{display}</span>"
+                f"</div>",
                 unsafe_allow_html=True,
             )
+
+        if rel_set:
+            st.markdown("<div style='font-size:12px;color:#5a6573;margin:10px 0 6px'>"
+                        "<b>关系语义组</b></div>",
+                        unsafe_allow_html=True)
+            cols2 = st.columns(3)
+            for i, (group_name, (group_color, sample_rel)) in enumerate(sorted(rel_set.items())):
+                cols2[i % 3].markdown(
+                    f"<div style='display:flex;align-items:center;margin:3px 0;'>"
+                    f"<span style='display:inline-block;width:22px;height:3px;"
+                    f"background:{group_color};border-radius:2px;margin-right:8px;'></span>"
+                    f"<span style='font-size:12px;color:#1f2933'>{group_name}</span>"
+                    f"<span style='font-size:11px;color:#8a96a3;margin-left:6px'>(如 {sample_rel})</span>"
+                    f"</div>",
+                    unsafe_allow_html=True,
+                )
 
 
 def _render_stats(kg: KGStore) -> None:
@@ -348,14 +646,70 @@ def _render_stats(kg: KGStore) -> None:
 
 # ---------- main ----------
 
+_GLOBAL_CSS = """
+<style>
+  .stApp { background: linear-gradient(180deg, #fbfcfe 0%, #f4f7fb 100%) !important; }
+  section[data-testid="stSidebar"] { background: #ffffff !important; border-right: 1px solid #e4e9f0; }
+  h1, h2, h3 { color: #1f2933 !important; font-family: Inter, 'PingFang SC', sans-serif; }
+  .stMarkdown, .stCaption { color: #3d4852; }
+  div[data-testid="stExpander"] {
+    background: #ffffff !important;
+    border: 1px solid #e4e9f0 !important;
+    border-radius: 10px !important;
+    box-shadow: 0 1px 3px rgba(70,90,120,0.05) !important;
+  }
+  div[data-testid="stMetric"] {
+    background: #ffffff;
+    border: 1px solid #e4e9f0;
+    border-radius: 10px;
+    padding: 10px 14px;
+    box-shadow: 0 1px 3px rgba(70,90,120,0.06);
+  }
+  .stButton button {
+    border-radius: 8px !important;
+    border: 1px solid #d6dde6 !important;
+    background: #ffffff !important;
+    color: #1f2933 !important;
+    transition: all .15s ease;
+  }
+  .stButton button:hover {
+    border-color: #4a90e2 !important;
+    color: #4a90e2 !important;
+    background: #f0f6ff !important;
+  }
+  input[type="text"] {
+    border-radius: 8px !important;
+    border: 1px solid #d6dde6 !important;
+  }
+  input[type="text"]:focus {
+    border-color: #4a90e2 !important;
+    box-shadow: 0 0 0 3px rgba(74,144,226,0.12) !important;
+  }
+</style>
+"""
+
+
 def main() -> None:
     st.set_page_config(
         page_title="单-双折叠翼变体飞行器 · 领域问答助手",
         layout="wide",
         initial_sidebar_state="expanded",
     )
-    st.title("✈ 单-双折叠翼变体飞行器 · 领域问答助手")
-    st.caption("基于知识图谱 (NER+触发词+模板+SVO+类型/章节) 与论文原文的双面板 QA 系统")
+    st.markdown(_GLOBAL_CSS, unsafe_allow_html=True)
+    st.markdown(
+        "<div style='padding:14px 18px;border-radius:12px;"
+        "background:linear-gradient(135deg,#ffffff,#f0f6ff);"
+        "border:1px solid #e4e9f0;box-shadow:0 1px 3px rgba(70,90,120,0.06);"
+        "margin-bottom:10px'>"
+        "<div style='font-size:24px;font-weight:700;color:#1f2933;font-family:Inter,sans-serif'>"
+        "✈ 单-双折叠翼变体飞行器 · 领域问答助手"
+        "</div>"
+        "<div style='font-size:13px;color:#5a6573;margin-top:4px'>"
+        "基于知识图谱（NER + 触发词 + 模板 + 依存增强 + 类型/章节）与论文原文的双面板 QA 系统"
+        "</div>"
+        "</div>",
+        unsafe_allow_html=True,
+    )
 
     with st.sidebar:
         st.header("数据源")
