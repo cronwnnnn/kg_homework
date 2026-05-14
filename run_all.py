@@ -1,7 +1,8 @@
 """一键脚本：抽取 → 评估 → 摘要。
 
 工作流：
-    1. 用 ans.py 导出 data/entities_by_type.json（确保词典与抽取一致）；
+    1. 若 data/entities_by_type.json 不存在，则用 ans.py 导出（一次性）；
+       已存在时**不会**覆盖（避免抹掉历史调优词典）；强制重生用 --regen-vocab。
     2. 运行 run_extract.py（默认 mock LLM）抽取三元组；
     3. 运行 evaluate_kg.py 用第四章人工金标 (gold/gold_triples_augmented.csv) 评估；
     4. 打印最终统计与文件清单。
@@ -10,6 +11,7 @@
     uv run python run_all.py                                  # mock LLM 模式（默认）
     uv run python run_all.py --llm openai --llm-discover      # 启用 OpenAI 兼容 API
     uv run python run_all.py --skip-extract                   # 跳过抽取，只跑评估
+    uv run python run_all.py --regen-vocab                    # 强制从 ans.py 重新生成 JSON
 """
 
 from __future__ import annotations
@@ -45,6 +47,11 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--skip-eval", action="store_true", help="跳过评估")
     p.add_argument("--quiet", action="store_true", help="抽取阶段静默")
     p.add_argument(
+        "--regen-vocab",
+        action="store_true",
+        help="强制从 ans.py 重新生成 data/entities_by_type.json（默认仅在 JSON 缺失时生成，避免覆盖调优版本）",
+    )
+    p.add_argument(
         "--gold",
         default="gold/gold_triples_augmented.csv",
         help="评估用的人工金标 CSV（默认第四章 augmented 版）",
@@ -57,8 +64,16 @@ def main() -> int:
     args = parse_args()
     py = sys.executable
 
-    if run([py, "tools/export_entities_by_type_json.py"], "Step 1/3: 导出领域词典 JSON") != 0:
-        return 1
+    vocab_json = os.path.join(ROOT, "data", "entities_by_type.json")
+    if args.regen_vocab or not os.path.isfile(vocab_json):
+        if run([py, "tools/export_entities_by_type_json.py"], "Step 1/3: 导出领域词典 JSON（首次或强制重生）") != 0:
+            return 1
+    else:
+        print()
+        print("=" * 70)
+        print(f"[run_all] Step 1/3: 复用已有词典 {os.path.relpath(vocab_json, ROOT)}")
+        print(f"[run_all] （想从 ans.py 重新生成请加 --regen-vocab）")
+        print("=" * 70)
 
     if not args.skip_extract:
         cmd = [

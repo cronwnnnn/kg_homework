@@ -79,6 +79,7 @@ U型槽,used_for,增强抗扭性能
 副翼上偏,used_for,降低升力
 副翼下偏,used_for,增加升力
 副翼偏转,generates,阻力
+副翼偏转,has_value,3200N·m
 副翼偏转产生阻力,has_value,900N
 副翼偏转线性区,used_for,稳定控制
 副翼偏转角度增大,causes,失速

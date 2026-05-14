@@ -1,39 +1,39 @@
 ==== 抽取统计 ====
 段落数: 438
 句子数: 1042
-实体数: 502
+实体数: 503
 三元组数: 1367
 
 ---- 按来源 (合并后) ----
   chapter: 474
-  type: 444
-  trigger: 221
+  type: 445
+  trigger: 220
   pattern: 88
-  dep: 75
+  dep: 74
   numeric: 48
   trigger+pattern: 6
-  trigger+dep: 5
+  trigger+dep: 6
   trigger+pattern+pattern: 4
   trigger+pattern+pattern+pattern: 1
   pattern+dep: 1
 
 ---- 按关系类型 (Top-30) ----
   discussed_in: 474
-  instance_of: 444
-  has_part: 51
+  instance_of: 445
+  has_part: 50
   has_value: 46
-  located_at: 42
+  located_at: 43
   uses_method: 33
   generates: 32
   used_for: 22
-  improves: 19
   needs: 19
+  improves: 18
   develops: 16
   connected_to: 16
-  satisfies: 14
+  controls: 14
   reduces: 13
-  controls: 13
   drives: 13
+  satisfies: 13
   manufactures: 12
   verifies: 11
   affects: 11
@@ -52,7 +52,7 @@
 ---- 按来源 (合并前) ----
   trigger: 950
   chapter: 474
-  type: 444
+  type: 445
   pattern: 124
   dep: 104
   numeric: 57

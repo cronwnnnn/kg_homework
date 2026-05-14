@@ -15,9 +15,12 @@ NextGenAeronautics,instance_of,组织机构
 下机翼,has_part,上机翼弯度小于下机翼
 下机翼,improves,上机翼
 中国航空工业集团公司第一飞机设计研究院,instance_of,组织机构
+俯仰力矩,has_value,3200N·m
 俯仰力矩变化,greater_than,机翼
 俯仰力矩变化,less_than,副翼偏转
 公转角度,located_at,单翼布局
+公转速度,has_value,10度
+公转速度,instance_of,设计参数
 副翼,needs,副翼偏转
 副翼,needs,升力
 副翼,needs,控制活动机翼公转
@@ -48,8 +51,6 @@ NextGenAeronautics,instance_of,组织机构
 变体飞行器,has_part,副翼
 变体飞行器,has_part,连杆
 固定机翼,generates,升力
-固定机翼,has_value,10度
-固定机翼,has_value,1m
 固定机翼,instance_of,机翼构型
 奥斯瓦尔德因子,depends_on,机翼
 奥斯瓦尔德因子,instance_of,气动概念
@@ -78,6 +79,7 @@ NextGenAeronautics,instance_of,组织机构
 气动舵面,generates,气动力驱动
 活动机翼,connected_to,45%弦长
 活动机翼,connected_to,连杆
+活动机翼,has_value,1m
 活动机翼,has_value,900N
 活动机翼,instance_of,机翼构型
 活动机翼,located_at,下机翼
