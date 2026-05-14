@@ -272,3 +272,6 @@ uv run streamlit run app_qa/app.py
 | 不允许只用 LLM | 必须 | 主体由传统抽取（含依存句法）产 1367 条；关闭 LLM 仍可独立运行 | ✓ 满足 |
 
 ---
+
+## 9. 项目的github地址
+https://github.com/cronwnnnn/kg_homework
