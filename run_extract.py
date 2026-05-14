@@ -1,20 +1,5 @@
 """自动抽取主入口：从论文 aftcln.txt 抽取知识图谱三元组。
 
-运行示例：
-    # 默认 mock 模式（无须任何 API），词典来自 ans.EntityLibrary
-    uv run python run_extract.py
-
-    # 不依赖运行时 ans：先用工具导出 JSON，再指定路径（推荐用于交付/解耦）
-    uv run python tools/export_entities_by_type_json.py
-    uv run python run_extract.py --entities-json data/entities_by_type.json
-
-    # 接入 OpenAI 兼容 API（DeepSeek / Kimi / 智谱 等）
-    set OPENAI_API_KEY=sk-xxx
-    set OPENAI_BASE_URL=https://api.deepseek.com/v1
-    set OPENAI_MODEL=deepseek-chat
-    uv run python run_extract.py --llm openai --entities-json data/entities_by_type.json
-    # 二阶段：按章发现正文中可核对的新三元组（须 openai）
-    uv run python run_extract.py --llm openai --llm-discover --entities-json data/entities_by_type.json
 """
 
 from __future__ import annotations

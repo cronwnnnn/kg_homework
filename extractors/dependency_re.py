@@ -1,14 +1,5 @@
 """依存句法增强的关系抽取器（DependencyREExtractor）。
 
-相对原 svo_extractor.py 的核心改进：
-    1. **不强求 head/tail 在词典内**：直接用子树拼接得到完整 NP（如"上下机翼相互干扰"）；
-    2. **子树清洗**：去掉副词、助词、连词、标点等修饰词，得到干净的实体名；
-    3. **触发词驱动归一化**：用 RelationOntology.TRIGGER_TABLE 把谓词映射到关系本体；
-    4. **cop 模式**：识别"X 为 N 单位"的 has_value 子句；
-    5. **否定/被动检测**：自动翻转 head/tail 或降分；
-    6. **关系-类型约束**：复用 schema.py 的 RELATION_TYPE_CONSTRAINTS；
-    7. **降级**：spaCy 模型缺失时优雅返回空列表，不破坏流水线。
-
 依赖：
     spaCy + zh_core_web_sm（中文依存模型）。
     安装：python -m spacy download zh_core_web_sm

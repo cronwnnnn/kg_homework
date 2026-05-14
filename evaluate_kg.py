@@ -6,19 +6,12 @@
     3) **Partial F1 (L3)**: 关系一致 + head/tail 双向子串匹配（min_len=2）；
     4) **实体级 F1**: 端点实体集合 P/R/F1。
 
-错误分析：
-    - 写出 ``output/eval_tp.csv``、``eval_fp.csv``、``eval_fn.csv``，
-      方便人工抽查最常见的误抽 / 漏抽。
-    - 同时打印关系级 P/R/F1 与 (head, tail) 混淆矩阵 Top-N。
-
 默认输入：
-    --pred output/triples_with_meta.csv
     --gold gold/gold_triples_augmented.csv     # 第四章主基线金标（745 条）
 
 按章节过滤（仅评估某一章的指标）：
     --chapter "第4章"            # 子串匹配 pred CSV 的 chapter 列
     --include-global             # 同时纳入 instance_of 等全局类型分类
-
 用法：
     uv run python evaluate_kg.py
     uv run python evaluate_kg.py --gold gold/gold_triples.csv --chapter "第4章" \

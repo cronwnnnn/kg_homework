@@ -1,12 +1,5 @@
 """一键脚本：抽取 → 评估 → 摘要。
 
-工作流：
-    1. 若 data/entities_by_type.json 不存在，则用 ans.py 导出（一次性）；
-       已存在时**不会**覆盖（避免抹掉历史调优词典）；强制重生用 --regen-vocab。
-    2. 运行 run_extract.py（默认 mock LLM）抽取三元组；
-    3. 运行 evaluate_kg.py 用第四章人工金标 (gold/gold_triples_augmented.csv) 评估；
-    4. 打印最终统计与文件清单。
-
 用法：
     uv run python run_all.py                                  # mock LLM 模式（默认）
     uv run python run_all.py --llm openai --llm-discover      # 启用 OpenAI 兼容 API

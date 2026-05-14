@@ -1,11 +1,5 @@
 """依存句法 SVO 抽取：基于 spaCy 的中文依存分析。
 
-相对原 pipeline_test.py 的改进：
-    1. 不再仅依赖 ROOT，扩展到所有动词节点；
-    2. 收集 conj/comp/cop 等扩展依存类型，提升召回；
-    3. 谓词通过 RelationNormalizer 归一化为统一关系类型；
-    4. 头/尾通过实体词典回填："NER 命中实体" 比 "spaCy 切出的零碎词" 优先；
-    5. 缺失 spaCy 模型时优雅降级。
 """
 
 from __future__ import annotations

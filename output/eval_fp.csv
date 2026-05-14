@@ -49,6 +49,8 @@ NextGenAeronautics,instance_of,组织机构
 变体飞行器,has_part,副翼
 变体飞行器,has_part,连杆
 固定机翼,generates,升力
+固定机翼,has_value,10度
+固定机翼,has_value,1m
 固定机翼,instance_of,机翼构型
 奥斯瓦尔德因子,depends_on,机翼
 奥斯瓦尔德因子,instance_of,气动概念
@@ -76,8 +78,6 @@ NextGenAeronautics,instance_of,组织机构
 气动舵面,generates,气动力驱动
 活动机翼,connected_to,45%弦长
 活动机翼,connected_to,连杆
-活动机翼,has_value,10度
-活动机翼,has_value,1m
 活动机翼,has_value,900N
 活动机翼,instance_of,机翼构型
 活动机翼,located_at,下机翼

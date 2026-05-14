@@ -1,9 +1,5 @@
 """LLM 增强层：在传统抽取候选基础上做关系归一化、过滤、隐式关系补全。
 
-关键约束（来自任务要求）：
-    - 不允许只用 LLM 抽取——LLM 必须基于"传统层已识别的实体"工作；
-    - 必须可降级为 mock 模式，便于本地无 API 时也能跑通流水线；
-    - 真实模式兼容 OpenAI 协议（DeepSeek、Kimi、智谱、Ollama OpenAI-Compatible 都行）。
 """
 
 from __future__ import annotations

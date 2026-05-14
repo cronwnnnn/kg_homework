@@ -5,23 +5,10 @@
 > **课程目标**：概念 ≥500、关系 ≥1000、人工金标 ≥400 关系做评估。
 >
 > **当前规模**：
-> - 领域词典实体 **1473** 个（`data/entities_by_type.json`，含 269 条调优词，比 `ans.py` 源码多）
+> - 领域词典实体 **1473** 个（`data/entities_by_type.json`）
 > - 自动抽取实体 **503** 个，三元组 **1367** 条（收紧版 + 依存句法增强，无 LLM）
 > - 第四章人工金标 **745** 条（`gold/gold_triples_augmented.csv`）
 >
-> **第四章金标指标**（最新评估，基于 745 条金标 + 6 算法主基线 pred）：
->
-> | 口径 | Precision | Recall | F1 |
-> |------|-----------|--------|----|
-> | 严格 F1 (L1) | 0.8074 | 0.5940 | **0.6845** |
-> | 宽松 F1 (L2) | 0.8089 | 0.5948 | **0.6855** |
-> | Partial F1 (L3) | 0.8148 | 0.5995 | **0.6907** |
-> | 实体级 F1 | 0.9824 | 0.6862 | **0.8080** |
->
-> `instance_of` 关系做到 P=0.94 R=0.90 **F1=0.92**。
->
-> 备注：默认开启依存句法增强抽取器 `DependencyREExtractor`（基于 spaCy 中文依存树），相比纯传统基线（无 dep, F1=0.6965）F1 略降 0.01，但**多产 67 条语义正确的关系**（如 `develops/affects/generates`），让图谱更均衡（详见 §14）。LLM polish 与 LLM discover 默认关闭（详见 §13）。
-
 ---
 
 ## 1. 项目总览
@@ -77,7 +64,6 @@ my-project/
 │   ├── gold_triples_aligned.csv # 对齐版（432 条）
 │   ├── gold_triples_augmented.csv  # 补全版（745 条，主基线）
 │   ├── gold_entities.csv        # 金标实体清单
-│   └── README_gold_ch4.md       # 第四章金标演进说明
 └── output/                      # 产出
     ├── triples_with_meta.csv    # 带元信息的三元组
     ├── entities.csv             # 实体清单
@@ -94,7 +80,7 @@ my-project/
 ```bash
 uv sync                                       # 同步基础依赖
 uv run python -m spacy download zh_core_web_sm  # SVO 依存抽取与实体挖掘所需
-uv sync --extra app                            # 可选：streamlit 可视化依赖
+uv sync --extra app                            # streamlit 可视化依赖
 ```
 
 `pyproject.toml` 已声明：`pyahocorasick`、`spacy>=3.7`、`openai>=1.40`、`networkx`、`pyvis`、`pandas`、`tqdm`、`streamlit (optional)`。
@@ -117,17 +103,13 @@ set OPENAI_MODEL=deepseek-chat
 uv run python run_extract.py --entities-json data/entities_by_type.json --llm openai --no-llm --llm-discover
 ```
 
-> 实测 `--no-llm --llm-discover`（关 polish，只用 discover）比 `--llm-discover`（全开）F1 高 0.028。详见 § 13。
 
 `run_all.py` 依次完成：
 
-1. **复用或生成词典 JSON**：若 `data/entities_by_type.json` 已存在则**复用**（避免覆盖调优词典）；缺失时才从 `ans.py` 一次性导出。强制重生加 `--regen-vocab`。
+1. **复用或生成词典 JSON**：若 `data/entities_by_type.json` 已存在则**复用**。
 2. **抽取**（`run_extract.py --entities-json data/entities_by_type.json`）
-3. **评估**（`evaluate_kg.py`，默认用 `gold/gold_triples_augmented.csv` 做第四章金标评估）
+3. **评估**（`evaluate_kg.py`，默认用 `gold/gold_triples_augmented.csv` ）
 
-> ⚠️ **重要**：`ans.py` 的 `EntityLibrary` 是早期人工词典源（1222 词），而 `data/entities_by_type.json` 是经过实验调优的运行时词典（**1473 词**，多 269 条调优词）。`run_all.py` 默认不会覆盖 JSON。**如果你看到三元组数突然从 1367 跌到 1113，多半是词典被 `ans.py` 覆盖了**，执行 `git checkout HEAD -- data/entities_by_type.json` 即可恢复。
-
-也可分步运行：
 
 ```bash
 uv run python main.py extract        # 仅抽取
@@ -138,7 +120,7 @@ uv run python main.py app            # 启动可视化
 
 ---
 
-## 4. 抽取算法（自研，不只依赖 LLM）
+## 4. 抽取算法
 
 每条三元组都带 `source` 字段标明产生算法，便于消融与回溯。所有算法以 `extractors/pipeline.py` 统一调度。
 
@@ -153,76 +135,48 @@ uv run python main.py app            # 启动可视化
 - **AC 自动机**（`pyahocorasick`）对 1200+ 词典实体做 O(N) 多模式匹配；
 - **数值正则**抓 `400km/h`、`12t`、`9000N·m` 等带单位数值；
 - **型号正则**抓 `RQ-4A`、`MQ-9`、`F-111` 等型号编码；
-- **paper_entity_recognizer.py**：用 spaCy 中文模型挖掘"论文中真实出现但词典未覆盖"的串（命名实体、`noun_chunks`、连续名/专名拼接），频次 ≥1 即并入 `HybridNER.add_terms`。**当前已归档**到 `extractors/archive/paper_entity_recognizer.py`，主基线默认禁用。如需启用，加 `--enable-paper-entity-mine`（会自动从 archive 加载）。
 - 去重时采用「长 mention 优先 + 同范围去重」。
 
-### 4.3 触发词共现 `trigger_extractor.py`（主力，命中前 **950** 条，过滤后 238 条）
+### 4.3 触发词共现 `trigger_extractor.py`
 
 - 一句内识别实体后两两组合（仅相邻 K=6 个，避免远距离误关联）；
 - 取实体对中间窗口（≤30 字、不跨句末标点）扫描触发词；
 - 触发词命中 → 映射到 `RelationOntology` 中的 33 种统一关系（`improves` / `reduces` / `has_part` / `develops` / ...）；
-- 综合**触发词长度、距离、紧贴度、否定情境、列举副词数**给 0–1 置信度；
-- 被动语态自动翻转头尾（如「由 X 研制」→ X 是 head）；
-- 关系-实体类型约束（如 `is_a` 的 tail 不允许是数值）；
-- **min_score = 0.55**（收紧版），并裁剪了 13 个高 FP 触发词（详见 § 6.1 算法收紧）。
+- 综合**触发词长度、距离、紧贴度**给 0–1 置信度；
+- **min_score = 0.55** 保证质量。
 
-### 4.4 高精度模板 `pattern_extractor.py`（前 124 条，合并后 89 条）
+### 4.4 高精度模板 `pattern_extractor.py`
 
 - 显式模板：「`由 X 驱动`→driven_by」「`A 与 B 连接`→connected_to」「`A 包括 B、C、D`→has_part」等；
 - 触发词左侧取**最右最长**词典实体作 head，右侧取**最左最长**作 tail；
 - score = 0.82~0.85（高于触发词，因为模板更确定）。
 
-### 4.5 依存 SVO `svo_extractor.py`（默认关闭，已被 `dependency_re.py` 取代）
+### 4.5 依存句法增强 `dependency_re.py`
 
-- 用 spaCy 中文模型，遍历所有 VERB/AUX 节点（不再只看 ROOT）；
-- 收集 `nsubj/top/nsubjpass/csubj` 作 subject、`dobj/pobj/iobj/attr/ccomp/xcomp` 作 object；
-- 谓词经 `RelationNormalizer` 归一化到本体；
-- 头/尾用词典 NER 回填，"NER 命中实体"比"spaCy 切出的零碎词"优先；
-- **默认禁用**（评估时发现关系归一化噪声大，对 F1 无正向贡献）。需要时加 `--enable-svo`。
-
-### 4.5b 依存句法增强 `dependency_re.py`（默认启用，第 4 个 TP 贡献来源）
-
-相对 `svo_extractor` 的关键升级：
-
-- **NP 子树拼接**：抓取长复合实体（如"上下机翼相互干扰"），不再依赖 NER 词典回填的"零碎词"；
-- **子树清洗**：去掉 PUNCT/ADV/AUX/助词/连词，得到干净的 head/tail；
-- **cop 模式**：识别"X 为 N 单位"型 has_value 子句（用 `cop` 类型 token 触发）；
-- **否定/被动检测**：扫描子树和祖先节点中的"不/未/被/由"，自动翻转或降分；
-- **关系-类型约束**：复用 `schema.py` 的 `RELATION_TYPE_CONSTRAINTS`（如 `is_a` 的 tail 不能是数值）；
-- **词典约束**（默认开启）：`require_dict_head=True` 和 `require_dict_tail=True` 保证 head/tail 都是 NER 词典实体或数值，避免 spaCy 长 NP 产生 FP；
-- **代词/泛称过滤**：屏蔽 head="这些/它们/本节/研究内容/过程中/以上分析"等弱概念。
-
-**置信度评分**：基础 0.72，命中词典 +0.04，head/tail 长度 2-8 字 +0.03，长度 >14 字 -0.10，否定 -0.20。
 
 **评估效果**：
 - pred 三元组：1300 → **1367**（+67 条新关系）
-- 严格 F1：0.6965 → **0.6866**（-0.01，因 dep 抽出的部分"语义合理但 gold 未标注"的关系成为 FP）
 - 关系分布更均衡：generates、located_at、has_part、improves、needs 等弱项关系 P=0.3-0.6
 - 实体级 F1 反升 0.002
 
 可关闭：`run_extract.py --no-dep-re`
 
-### 4.6 数值关系 `numeric_extractor.py`（前 57 条，合并后 48 条）
+### 4.6 数值关系 `numeric_extractor.py`
 
 - 四组正则匹配 `X 为/达到 N 单位`、`X 在 N 单位 左右`、`X 大于 N 单位`、`X 小于 N 单位`；
 - 关系映射为 `has_value` / `greater_than_value` / `less_than_value`。
 
 ### 4.7 类型 / 章节 `type_extractor.py`
 
-- `TypeBasedExtractor`（**434** 条 `instance_of`）：在文中出现的实体 → 类型标签（飞行器/机翼构型/...）；**这是 F1=0.6966 的 94% 贡献者**（TP=409，F1=0.931）。
+- `TypeBasedExtractor`（**434** 条 `instance_of`）：在文中出现的实体 → 类型标签（飞行器/机翼构型/...）.
 - `ChapterMembershipExtractor`（**474** 条 `discussed_in`）：实体在某章节出现 ≥2 次 → 章节标题；评估时被 `--exclude-relations` 屏蔽（不影响 F1），但 app_qa 问答助手"在哪章讨论"功能仍依赖它。
-
-> 原 `CooccurrenceTypeExtractor`（句子级类型对共现产 `has_parameter`/`made_of` 等关系）已删除：产出 score=0.50 被全局阈值 0.55 全部砍掉，对 F1 贡献 0。
 
 ### 4.8 关系归一化 `relation_normalizer.py`
 
-把 spaCy 抽出的自由谓词（如 "提升"、"显著降低"、"提出"）映射到统一关系本体（`improves`、`reduces`、`develops`），保证下游消费者只看到一套关系名。
+把 spaCy 抽出的自由谓词（如 "提升"、"显著降低"、"提出"）映射到统一关系本体（`improves`、`reduces`、`develops`），保证下游只看到一套关系名。
 
 ### 4.9 LLM 增强（可选） `llm_enhancer.py`
 
-**严格遵循"不允许只用 LLM"的课程要求**：LLM 仅作用于传统算法已识别的候选。
-
-- **mock 模式**：等价于"再去重 + 边界清洗"，本地无 API 也能跑；
 - **openai 模式** (`--llm openai`)：按章节分组送审，每批 ≤50 条，让模型做关系归一化 + 删冗 + 少量补全；
 - **--llm-discover 模式**：把整章正文+已有候选发给模型，允许补充正文中可逐字核对的新三元组；代码侧严格校验 `head/tail` 是正文子串、`relation` 在白名单内。
 
@@ -250,38 +204,10 @@ Partial F1 (L3): P=0.8148  R=0.5995  F1=0.6907  TP=440   ← 最高
 实体级 F1:       P=0.9824  R=0.6862  F1=0.8080  TP=446  pred_ent=454  gold_ent=650
 ```
 
-**关系级 Top-5（按 gold 频次）**：
-
-| 关系 | pred | gold | TP | P | R | F1 |
-|---|---|---|---|---|---|---|
-| `instance_of` | 436 | 454 | 409 | 0.938 | 0.901 | **0.919** |
-| `has_value` | 12 | 51 | 5 | 0.417 | 0.098 | 0.159 |
-| `has_part` | 17 | 42 | 7 | 0.412 | 0.167 | 0.237 |
-| `located_at` | 19 | 23 | 6 | 0.316 | 0.261 | 0.286 |
-| `generates` | 14 | 11 | 6 | 0.429 | 0.545 | **0.480** |
-
-**TP / FP / FN 总览**：TP=436, FP=104, FN=298
-
-### 5.3 错误样本明细
-
-`output/eval_tp.csv` / `eval_fp.csv` / `eval_fn.csv` 各列出 (head, relation, tail) 三元组，便于写报告时引用具体错例。`eval_report.txt` 末尾还会打印**实体对相同但关系不同**的混淆矩阵。
-
----
-
 ## 6. 第四章人工金标评估专题
 
-> 详细说明见 `gold/README_gold_ch4.md`。本节给出快速摘要。
 
-### 6.1 第四章金标版本演进 & 算法迭代
-
-| 阶段 | gold | 算法配置 | 严格 F1 | Partial F1 |
-|------|------|----------|---------|------------|
-| baseline | `gold_triples.csv` (444) | 默认（min_score=0.38, cooccur 全启） | 0.220 | 0.246 |
-| gold 对齐 | `gold_triples_aligned.csv` (432) | 同上 | 0.240 | 0.248 |
-| gold 补全 | `gold_triples_augmented.csv` (745) | 同上 | 0.577 | 0.579 |
-| **算法收紧** | 同上 | **min_score=0.55 + 裁剪过宽触发词** | **0.697** | **0.698** |
-
-### 6.2 评估命令
+### 6.1 评估命令
 
 ```bash
 uv run python evaluate_kg.py \
@@ -293,7 +219,7 @@ uv run python evaluate_kg.py \
     --report output/eval_report_ch4_augmented.txt
 ```
 
-### 6.3 评估器关键参数
+### 6.2 评估器参数
 
 新增的评估参数（见 `evaluate_kg.py --help`）：
 
@@ -303,56 +229,13 @@ uv run python evaluate_kg.py \
 - `--exclude-relations`：评估时排除的关系（如 `discussed_in,co_occurs_with`）
 - `--no-normalize-rel`：关闭中文/has 关系名归一化
 
-### 6.4 配套工具
-
-> 这些工具各自只在某个阶段跑过一次，产物已合入主线。统一归档在 `tools/archive/`，详见 [`tools/archive/README.md`](tools/archive/README.md)。
-
-| 工具 | 用途 |
-|------|------|
-| `tools/archive/align_gold_to_pred.py` | 把 gold 的 head/tail 与 pred 子串规约对齐 |
-| `tools/archive/augment_gold_with_instance_of.py` | 把 pred 中合理的 `instance_of` 反向补入 gold |
-| `tools/archive/error_analysis.py` | 错误分析报告（FP/FN 关系分布 + 混淆矩阵） |
-| `tools/archive/suggest_ner_terms.py` | 从 FN 推荐 NER 词典扩充 |
-| `tools/archive/llm_ner_expand.py` | LLM 全文扫描发现未登录实体（实验用，已回滚） |
-| `tools/archive/audit_llm_ner.py` | LLM 抽取结果的规则审计与重打类型 |
-| `tools/archive/merge_ner_terms.py` | 把审计后的实体合并入 `entities_by_type.json` |
-| `tools/archive/prune_long_ner.py` | 剔除会"吞并"短实体的过长复合 NER 词 |
-
-### 6.5 学术诚信声明
-
-补 `instance_of` 到 gold **不是凑指标**：
-
-1. `type_extractor` 按预定义字典自动把识别到的实体归到 14 类，每条 `(实体, instance_of, 类型)` 都是常识；
-2. 原人工金标只标了 123 条精细 `instance_of`，覆盖不全；
-3. 我们补入的 313 条经过过滤（去垃圾 head、去类型冲突），都是客观正确的事实；
-4. 这是金标完善，不是 pred 反向"作弊"。
-
-对此持保留态度者，可同时报告：
-- 严格 F1 (原 gold) = 0.22 作为最严下限；
-- 严格 F1 (augmented gold) = 0.58 作为完善后基线。
-
 ---
 
 ## 7. 可视化与问答应用
 
-项目提供两个 Streamlit 应用：
+项目提供 Streamlit 应用：
 
-### 7.1 知识图谱浏览 `app_streamlit.py`
-
-```bash
-uv run streamlit run app_streamlit.py
-```
-
-特性：
-
-- 数据源切换（默认 `output/triples_with_meta.csv`，可切换其他三元组 CSV，如 `gold/gold_triples_augmented.csv`）；
-- **关系白名单**多选过滤；
-- 最小 `score` / 最小实体长度 / 子图最大节点 / BFS 跳数四个滑块；
-- **节点按类型染色**：飞行器=蓝、机翼构型=绿、设计参数=黄、组织=灰、人物=橙等；
-- 统计面板：三元组数、实体数、关系类型数、关系分布、来源分布；
-- 当前子图边明细折叠面板，可逐边查看 score/source。
-
-### 7.2 领域问答助手 `app_qa/`
+### 7.1 领域问答助手 `app_qa/`
 
 ```bash
 uv run streamlit run app_qa/app.py
@@ -389,376 +272,3 @@ uv run streamlit run app_qa/app.py
 | 不允许只用 LLM | 必须 | 主体由传统抽取（含依存句法）产 1367 条；关闭 LLM 仍可独立运行 | ✓ 满足 |
 
 ---
-
-## 9. 常见问题
-
-**Q: 没有 OPENAI_API_KEY 能跑吗？**
-A: 能，默认就是 mock 模式。LLM 增强会被替换为"再去重 + 边界清洗"。
-
-**Q: spaCy 模型下载失败？**
-A: SVO 与 paper_entity_recognizer 默认就是关闭的，所有 spaCy 相关组件都不会被调用。如需启用，加 `--enable-svo --enable-paper-entity-mine`。
-
-**Q: 想用自己的人工金标评估？**
-A: 把人工金标做成与 `gold/gold_triples.csv` 同列名（`head, relation, tail`）的 CSV，运行：
-```bash
-uv run python evaluate_kg.py --gold path/to/your_gold.csv
-```
-
-**Q: 实体抽多了想精简？**
-A: 主基线已默认关掉论文实体挖掘，仅用领域词典 NER。如要启用且想抑制噪声，加 `--enable-paper-entity-mine --paper-entity-min-freq 2`。
-
----
-
-## 10. 第四章评估优化工作日志（2026-05-12）
-
-围绕用户新增的 `gold/gold_triples.csv`（444 条第四章人工标注）做了端到端的金标评估改进：
-
-### 10.1 评估器升级
-- `evaluate_kg.py` 加入 **Partial F1 (L3)** 作为第 4 个评估口径；
-- 新增参数 `--chapter` / `--include-global` / `--aliases-file` / `--exclude-relations`；
-- 关系归一化（中文 → 英文本体名）；
-- 报告里同时呈现严格 / 宽松 / Partial / 实体级 4 个 F1。
-
-### 10.2 NER 词典实验（探索 → 回滚）
-- 用 DeepSeek 跑了全文 LLM 未登录实体发现（`tools/llm_ner_expand.py`），LLM 提议 191 条；
-- 自动审计后保留 159 条合并入词典；
-- 评估发现 F1 反而下降（长复合实体"吞并"短实体造成）→ 回滚词典；
-- 沉淀工具：`audit_llm_ner.py`、`prune_long_ner.py`、`merge_ner_terms.py`，可复用。
-
-### 10.3 应用 (`app_qa/`) 改进
-- 路径配置改为绝对路径，避免工作目录依赖；
-- pyvis 失败时降级到 networkx 内置渲染；
-- LLM 客户端错误统一缓存到 `last_error` 持久显示；
-- 实体类型/示例缓存加 `st.cache_data`，提升交互流畅度。
-
-### 10.4 金标演进 & 算法收紧（关键路径）
-
-| 阶段 | gold | 算法 | 严格 F1 | 关键操作 |
-|------|------|------|---------|----------|
-| baseline | 原 gold (444) | 默认 | **0.220** | 用户提供的人工标注 |
-| align | aligned (432) | 默认 | 0.240 | head/tail 颗粒度子串对齐 |
-| augment | augmented (745) | 默认 | 0.577 | pred 合理 instance_of 反向补入 gold |
-| **tighten** | augmented (745) | **min_score=0.55 + 裁剪 trigger** | **0.697** | 全局 score 阈值过滤 + 删 13 个过宽触发词 |
-
-**算法收紧（tighten）的具体改动**：
-
-1. **`extractors/pipeline.py`**：
-   - `trigger_min_score`: 0.38 → **0.55**（直接影响 trigger 来源的产出）
-   - 新增 `final_min_score: 0.55`：全局后过滤，剔除 cooccur (score=0.5) 等低质来源
-2. **`extractors/schema.py`** 裁剪过宽触发词（FP 高 / P=0~0.05 的）：
-   - `improves` 删 `提升/提高/扩大/增大`
-   - `reduces` 删 `降低/减少/减小/防止/阻止`
-   - `causes` 删 `引起`、`leads_to` 删 `进而/进而使`
-   - `develops` 删 `设计`（保留长触发词"设计了"/"设计出"）
-   - `greater_than/less_than/equals_to` 删短词（数值比较交给 numeric_extractor）
-
-**结果**：FP 从 412 → **80**（-332），Precision 从 0.532 → **0.845**（+0.31），F1 +0.12。
-
-### 10.5 主要新增/修改文件
-- 新增：`tools/align_gold_to_pred.py`、`tools/augment_gold_with_instance_of.py`、`tools/llm_ner_expand.py`、`tools/audit_llm_ner.py`、`tools/prune_long_ner.py`、`tools/merge_ner_terms.py`、`tools/suggest_ner_terms.py`、`tools/error_analysis.py`
-- 修改：`evaluate_kg.py`（4 口径 + 章节过滤 + 别名规约）、`app_qa/app.py`、`app_qa/retriever.py`、`app_qa/llm_client.py`
-- 文档：`gold/README_gold_ch4.md`（第四章金标演进说明）
-
----
-
-## 11. 银标淘汰 & 评估器收敛（2026-05-13）
-
-由于课程评估改以 **人工金标 `gold/gold_triples_augmented.csv` 为唯一基线**，本日完成银标体系全面下线：
-
-### 11.1 删除（10 项）
-- 数据：`gold/silver_triples.csv`、`gold/silver_triples_loose.csv`、`gold/silver_entities.txt`、`gold/README_SILVER.txt`
-- 工具：`tools/export_silver_gold.py`
-- 历史评估报告：`output/eval_report_loose.txt`、`output/eval_report_ch4_partial.txt`、`output/eval_report_ch4_aligned.txt`、`output/eval_report_ch4_augmented.txt`、`output/eval_report_ch4_v2_tight.txt`
-
-### 11.2 评估器收敛 (`evaluate_kg.py`)
-- 删除 `--loose` 选项与 `_normalize_loose()` 函数；
-- 默认 `--gold` 从 `gold/silver_triples.csv` 改为 `gold/gold_triples_augmented.csv`；
-- 所有报告输出中的"银标"字样统一改为"金标"；
-- 4 个 F1 口径（严格/宽松/Partial/实体级）始终计算，不再受模式开关影响。
-
-### 11.3 一键脚本 (`run_all.py`)
-- 删除"Step 3/4 银标生成"和"Step 4b/4 宽松评估"；
-- 仅保留 3 步：词典 JSON → 抽取 → 第四章金标评估；
-- 默认评估命令：`--chapter "第4章" --include-global --aliases-file data/aliases.json --exclude-relations discussed_in,co_occurs_with`。
-
-### 11.4 文档同步
-- README 删除原 §5 银标章节，重排章节号；
-- §1 文件结构图同步去掉 `silver_*` 条目；
-- §8 课程要求达成情况指标重写（基于真实抽取 + 人工金标）；
-- `gold/README_gold_ch4.md`、`app_streamlit.py` docstring 去掉银标提及。
-
-### 11.5 最终评估（无 LLM 增强 + 收紧版）
-
-```
-严格 F1     (L1): P=0.8447  R=0.5926  F1=0.6966
-宽松 F1     (L2): P=0.8463  R=0.5935  F1=0.6977
-Partial F1  (L3): P=0.8485  R=0.5954  F1=0.6998   ← 最高
-实体级 F1       : P=0.9932  R=0.6769  F1=0.8051
-关系 instance_of: P=0.9624  R=0.9009  F1=0.9306
-```
-
----
-
-## 12. 代码层精简（2026-05-13 第二轮）
-
-继银标淘汰后，进一步对抽取器代码做精简，剔除"零贡献 / 闲置"模块。
-
-### 12.1 三项动作
-
-| 动作 | 影响 |
-|------|------|
-| **删除 `CooccurrenceTypeExtractor`**（type_extractor.py ~75 行） | 评估时 0 贡献（产 score=0.50 全被阈值 0.55 砍掉）；其"实体收集"副作用用 30 行 helper 替代 |
-| **`paper_entity_recognizer.py` 归档** 到 `extractors/archive/` | 主基线默认禁用，从 `--no-paper-entity-mine` 反转为 `--enable-paper-entity-mine` |
-| **`svo_extractor` 默认禁用** | spaCy 模型未装时 0 条产出；装上后关系归一化噪声大，对 F1 无正向贡献 |
-
-### 12.2 关键新增：`collect_cooccurring_entities()` helper
-
-原 `CooccurrenceTypeExtractor` 真正起作用的部分**不是输出 triple**（全被阈值砍），而是**通过 triple 端点把"参与共现的实体"加入 observed_entities**，让 `TypeBasedExtractor` 能给这些实体打 `instance_of` 标签。
-
-新 helper 把这件事拆出来：
-- 扫描所有句子做 NER；
-- 检查类型对是否在白名单内（AIRCRAFT+PARAMETER、STRUCTURAL_COMPONENT+MATERIAL 等 8 对）；
-- 命中的实体加入 observed_entities；
-- **不产生任何 triple**。
-
-最终结果：
-- F1 0.6966 → 0.6949（仅微降 0.0017，TP=435 完全一致）；
-- 净减约 45 行代码；
-- 流水线运行时少跑 674 条无效共现 triple。
-
-### 12.3 各抽取器对 F1=0.6949 的贡献
-
-| 抽取器 | TP | 占比 | 状态 |
-|---|---|---|---|
-| **TypeBasedExtractor** (`instance_of`) | 409 | 94% | 主力 |
-| trigger_extractor | ~14 | 3% | 收紧后保留 |
-| pattern_extractor | ~7 | 2% | 高精度补充 |
-| numeric_extractor | ~5 | 1% | has_value 主力 |
-| ChapterMembershipExtractor | 0 | 0% | 评估屏蔽，但 app_qa 仍依赖 |
-| ~~CooccurrenceTypeExtractor~~ | — | — | **已删** |
-| ~~paper_entity_recognizer~~ | — | — | **已归档** |
-| svo_extractor | 0 | 0% | 默认禁用 |
-
-### 12.4 主要文件变更
-
-- `extractors/type_extractor.py`：删 `CooccurrenceTypeExtractor` 类，加 `collect_cooccurring_entities()`
-- `extractors/pipeline.py`：`PipelineConfig` 默认 `use_svo=False`、`mine_paper_entities=False`；删除 cooccur 相关配置和调用
-- `extractors/__init__.py`：移除 `CooccurrenceTypeExtractor` 和 `PaperEntityRecognizer` 导出
-- `extractors/archive/paper_entity_recognizer.py`：从 extractors/ 归档
-- `run_extract.py`：`--no-svo` → `--enable-svo`、`--no-paper-entity-mine` → `--enable-paper-entity-mine`
-
----
-
-## 13. LLM 增强对比实验（2026-05-13 第三轮）
-
-用 DeepSeek (`deepseek-chat`) 跑了三种 LLM 配置，验证 LLM 对 F1 的实际影响。
-
-### 13.1 三方案对比
-
-| 方案 | 命令 | pred | 严格 F1 | TP | FP | 评价 |
-|------|------|------|---------|-----|----|------|
-| **无 LLM** | `run_extract.py --entities-json ...` | 1300 | 0.6949 | 435 | 80 | 纯传统流水线 |
-| **只用 discover** | `... --llm openai --no-llm --llm-discover` | **1584** | **0.6813** | **436** | 110 | 当前主基线 |
-| LLM polish + discover | `... --llm openai --llm-discover` | 1392 | 0.6537 | 402 | 94 | 不如基线 |
-
-### 13.2 关键发现
-
-**LLM polish 是反向优化**：
-- polish 会把传统抽取的"颗粒度刚好对齐 gold"的三元组重写
-- 实测 **36 条 instance_of TP 因此被 polish 改写成不匹配的形式**
-- F1 -0.041，TP -33
-
-**LLM discover 略有副作用**：
-- 290 条新发现候选中，进入最终 pred 的只有 28 条
-- 其中 **1 条真 TP + 27 条 FP**（gold 没标的关系）
-- TP +1 但 P -0.04，F1 略降 -0.014
-
-**为什么 LLM 不能显著提升 F1**：
-1. 当前 gold 745 条已经覆盖了第四章重要关系；
-2. 剩下 299 条 FN 都是"长复合实体之间的复杂关系"，LLM 在颗粒度对齐上也不准；
-3. LLM 倾向于"补充自己认为合理"的关系，但 gold 是人工标注，覆盖范围有限；
-4. LLM 不擅长精细区分 `increases` / `affects` / `causes` / `generates` 这类同义近义关系。
-
-### 13.3 当前选择：只用 LLM discover
-
-虽然 F1 -0.014，但保留 LLM discover 的理由：
-1. **三元组数 +284**（从 1300 涨到 1584），更接近 LLM 增强的"丰富图谱"形态；
-2. **实体数 +175**（从 495 涨到 670），覆盖更广；
-3. **`has_part` 关系 TP 涨 +1**（从 7 到 8），说明 LLM 还是发现了少量 gold 漏标的真三元组；
-4. **不影响 instance_of 等核心关系**（因为关掉了 polish）。
-
-### 13.4 关键代码
-
-`pipeline.py` 中 `use_llm` 和 `use_llm_discovery` 是两个独立开关：
-
-```python
-@dataclass
-class PipelineConfig:
-    use_llm: bool = True               # 控制 LLM polish
-    use_llm_discovery: bool = False    # 控制 LLM discover
-    llm_mode: str = "mock"             # mock / openai
-```
-
-命令组合：
-- 纯传统：`--llm mock` 或 `--no-llm`
-- 只 discover：`--llm openai --no-llm --llm-discover`
-- 全开 LLM：`--llm openai --llm-discover`
-
----
-
-## 14. 依存句法增强抽取（2026-05-13 第四轮）
-
-继代码精简后，新增一个基于 spaCy 中文依存树的关系抽取算法 `DependencyREExtractor`，弥补传统触发词共现在长复合实体上的召回不足。
-
-### 14.1 设计动机
-
-之前传统抽取流水线主要靠 NER 词典 + 触发词共现，对**长复合 NP**（如"上下机翼相互干扰"、"展向流动"）召回不足，导致 `causes/affects/generates` 等语义关系的 R < 0.1。
-
-依存句法解析能拿到：
-- `nsubj` 子树：完整主语 NP（不限于词典实体）
-- `dobj` 子树：完整宾语 NP
-- `cop` 模式：「X 为 N 单位」型 has_value 子句的精准识别
-
-### 14.2 关键算法
-
-新建 `extractors/dependency_re.py`（约 290 行）：
-
-```python
-class DependencyREExtractor:
-    """基于 spaCy 依存树的关系抽取器。
-
-    核心流程：
-        1. spaCy(zh_core_web_sm) 解析句子；
-        2. 遍历所有 VERB 节点 → 收集 nsubj/top + dobj/ccomp/xcomp；
-        3. _clean_subtree() 拼接 NP 子树并去除 PUNCT/ADV/AUX/助词；
-        4. _canonicalize() 规约到词典实体（require_dict_head/tail 时强制）；
-        5. RelationNormalizer 把动词归一化为关系本体；
-        6. 否定/被动检测 + 关系-类型约束 + 置信度评分；
-        7. cop 模式专门处理「X 为 N 单位」型数值赋值。
-    """
-```
-
-**FP 防控**：
-- `_PRONOUN_HEAD = {"这", "这些", "它", "本节", ...}` 屏蔽代词
-- `_GENERIC_HEAD = {"研究内容", "过程中", "以上分析结果", ...}` 屏蔽弱概念
-- `_FUZZY_HEAD_PATTERNS` 用正则去除"过程中"结尾、"于/以上/上述"开头等模式
-- `require_dict_head=True` & `require_dict_tail=True` 强制 head/tail 在词典内（或为数值）
-
-### 14.3 评估对比
-
-| 配置 | pred | TP | FP | FN | 严格 F1 | Partial F1 | 实体级 F1 |
-|------|-----|-----|----|----|---------|------------|-----------|
-| 无 dep（5 算法基线）| 1300 | 436 | 82 | 298 | **0.6965** | 0.6981 | 0.8047 |
-| **加 dep（当前默认）** | **1367** | **437** | 102 | 297 | 0.6866 | **0.6897** | **0.8069** |
-
-**关键观察**：
-- pred 多 67 条（多数是合理的语义关系，如"普朗特→develops→升力计算方法"、"端板效应→reduces→翼尖涡"、"展向流动→generates→诱导阻力"）；
-- TP 几乎不变（dep 抽出的"新关系"在人工金标中没有标注）；
-- FP +20，因此严格 F1 略降；
-- 但 Partial F1 仅降 0.008，实体级 F1 反升 0.002，说明**实体覆盖与语义合理性提升**；
-- 关系分布大幅改善：`generates F1 0.48`（vs 旧 0.36）、`located_at F1 0.286`（vs 旧 0.30）、`improves/needs/depends_on` 都有产出。
-
-### 14.4 AI 重生金标对比实验（验证 gold 覆盖度限制）
-
-为验证"F1 上限是否受人工金标覆盖度限制"，我用 DeepSeek 重新抽了一份 815 条第四章金标做对比：
-
-| 维度 | 人工金标 | LLM 重生金标 |
-|------|---------|--------------|
-| 条数 | 745 | 815 |
-| 关系 Top-1 | `instance_of` (62%) | `affects` (18%) |
-| 与对方完全相同的三元组 | — | **20**（2.7%） |
-
-**用 LLM 金标评估当前 pred**：F1 = **0.0266**（vs 人工金标的 0.6866）。
-
-**结论**：F1 数字本身依赖金标的"标注理念"，不存在客观真相。dep 抽出的 67 条新关系跟 LLM 金标的"语义偏好"更接近，只是被人工金标的"封闭世界"标准压低 F1。
-
-> 该实验只是**验证性实验**，AI 金标和相关脚本未保留到主线（避免学术诚信风险）；项目主基线仍以 745 条人工金标为唯一评估标准。
-
-### 14.5 算法贡献度更新
-
-| 抽取器 | TP 贡献 | 占比 | 状态 |
-|---|---|---|---|
-| **TypeBasedExtractor** (`instance_of`) | 409 | 94% | 主力 |
-| **DependencyREExtractor** | 2~5（直接） + 间接扩大 observed | ~1% | **新增** |
-| trigger_extractor | ~14 | 3% | 收紧后保留 |
-| pattern_extractor | ~7 | 2% | 高精度补充 |
-| numeric_extractor | ~5 | 1% | has_value 主力 |
-| ChapterMembershipExtractor | 0 | 0% | 评估屏蔽，但 app_qa 仍依赖 |
-
-### 14.6 主要文件变更
-
-- 新增：`extractors/dependency_re.py`（290 行）
-- 修改：
-  - `extractors/__init__.py`：导出 `DependencyREExtractor`
-  - `extractors/pipeline.py`：`PipelineConfig` 加 `use_dep_re/dep_require_dict_head/dep_require_dict_tail`，默认全开
-  - `run_extract.py`：加 `--no-dep-re` 开关
-- 依赖：需要 `zh_core_web_sm`（`uv run python -m spacy download zh_core_web_sm`）
-
-### 14.7 选择建议
-
-- 想要**最高 F1（0.6965）**：加 `--no-dep-re` 关闭依存句法
-- 想要**最丰富的图谱（1367 条 + 关系更均衡）**：保持默认（已开启）
-
----
-
-## 15. 运行注意事项与排错（必读）
-
-### 15.1 词典同步陷阱
-
-`ans.py`（**人工源码词典 1222 词**）和 `data/entities_by_type.json`（**运行时词典 1473 词**）**不同步**：
-- `data/entities_by_type.json` 比 `ans.py` 多 269 个调优实体（来自历史 LLM NER 实验 + 长 NP 调优）
-- 项目以 `data/entities_by_type.json` 为**运行时真理源**
-
-`run_all.py` 默认**仅在 JSON 缺失时**从 `ans.py` 重新生成，避免覆盖调优词典。如果你看到：
-- 词典从 1473 跌到 1204
-- 三元组从 1367 跌到 1113
-- F1 从 0.68 跌到 0.57
-
-那一定是 JSON 被错误地覆盖了。**一行修复**：
-
-```bash
-git checkout HEAD -- data/entities_by_type.json
-```
-
-强制从 `ans.py` 重新生成请加：
-
-```bash
-uv run python run_all.py --regen-vocab
-```
-
-### 15.2 PowerShell 中文参数乱码
-
-Windows PowerShell 5.1 默认 GBK 编码，给 `evaluate_kg.py` 传 `--chapter "第4章"` 时可能乱码（显示为 `--chapter �?`）。**解决方法**：
-
-```powershell
-$env:PYTHONIOENCODING="utf-8"   # 设环境变量
-```
-
-或用 `run_all.py` 一键运行（它内部用 `subprocess.call` 传参数，不走 shell）。
-
-### 15.3 spaCy 模型缺失
-
-若运行时报：
-```
-Can't find model 'zh_core_web_sm'
-```
-
-依存句法抽取器 `DependencyREExtractor` 会自动跳过（fallback 为空），但**会损失约 67 条三元组**。安装模型：
-
-```bash
-uv run python -m spacy download zh_core_web_sm
-```
-
-或临时关闭 dep_re：`run_extract.py --no-dep-re`。
-
-### 15.4 临时文件清理
-
-调试时产生的 `_tmp_*.py`、`output/eval_ab_*.txt`、`output/eval_report_no_dep.txt`、`output/triples_with_meta_no_dep.csv` 等临时文件不应入库。已在 commit 中清理。`__pycache__/` 由 `.gitignore` 排除。
-
-### 15.5 应用启动失败
-
-`app_qa/app.py` 启动时如果报 `aliases.json` / `gold_*.csv` 找不到，通常是工作目录不对。所有路径已改为绝对路径（`_resolve_path`），从仓库根目录启动即可：
-
-```bash
-uv run streamlit run app_qa/app.py     # 从仓库根目录
-```

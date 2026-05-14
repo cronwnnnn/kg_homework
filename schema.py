@@ -1,6 +1,5 @@
 """单-双折叠翼变体飞行器：人工整理领域实体词典（EntityLibrary）。
 
-论文关系与图谱请用 ``run_extract.py`` 从正文自动抽取；本文件不再生成人工大图谱。
 """
 
 from enum import Enum

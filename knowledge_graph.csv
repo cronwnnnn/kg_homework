@@ -477,9 +477,9 @@ Z字形折叠翼,instance_of,机翼构型
 最大升力系数,improves,双翼构型
 展开变体,verifies,单-双折叠翼变体
 变体,affects,航程
-活动机翼,affects,变体过程中
+攻角变化,affects,变体过程中
 流场结构,affects,机翼
-活动机翼,causes,变体过程
+攻角变化,causes,变体过程
 活动机翼,causes,额外俯仰力矩
 活动机翼固定,causes,失速
 ACADO,combines_with,半经验方法
@@ -505,6 +505,7 @@ ACADO,combines_with,半经验方法
 活动机翼固定,generates,升力
 阻力,generates,扭转力矩
 上下机翼间,has_part,桁架式结构
+固定机翼,has_part,双翼式布局
 折叠翼,has_part,变体
 背景网格,has_part,固定机翼
 飞行包线,has_part,速度包线
@@ -514,6 +515,7 @@ ACADO,combines_with,半经验方法
 原理验证机,improves,机翼
 双翼气动性能,improves,双翼
 折叠翼,improves,最大升力系数
+最大升力系数,improves,起降性能
 活动机翼,improves,变体控制
 连杆变形,improves,变体控制
 折叠翼,leads_to,变体
@@ -544,7 +546,7 @@ ACADO,combines_with,半经验方法
 变体飞行器,satisfies,变体
 连杆,satisfies,变体过程中
 机翼,uses_method,菱形结构
-翼尖,uses_method,负担转角
+机翼,uses_method,负担转角
 俯仰力矩变化,less_than,副翼偏转
 ACADO,used_for,支撑翼布局
 变展长变体技术,used_for,展弦比
@@ -740,15 +742,15 @@ ACADO,discussed_in,第2章大展弦比变展长变体飞行器设计规律研究
 变体,has_value,7×10^5N·m
 变体过程中,has_value,40度
 固定机翼,has_value,10000kg
+固定机翼,has_value,10度
+固定机翼,has_value,1m
 巡航速度,has_value,15m/s
 平均弦长,has_value,1m
+扭转力矩,has_value,3200N·m
 最大副翼偏转角,has_value,20度
 最大副翼偏转角,has_value,22度
 气动力驱动变体,has_value,100m/s
-活动机翼,has_value,10度
 活动机翼,has_value,15度
-活动机翼,has_value,1m
-活动机翼,has_value,3200N·m
 活动机翼,has_value,800kg
 活动机翼,has_value,900N
 滚转扰动力矩,has_value,20000N·m

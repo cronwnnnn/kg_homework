@@ -4,11 +4,6 @@
     1) TypeBasedExtractor：实体 → 类型标签 的 instance_of 关系（主力，贡献 94% TP）。
     2) ChapterMembershipExtractor：实体 → 章节标题 的 discussed_in 关系（供 app_qa 章节问答使用）。
 
-辅助函数：
-    collect_cooccurring_entities(ner, sentences, entities_by_type) → 收集
-        "句子级同类型对"的实体，喂给 TypeBasedExtractor.set_observed_entities 用。
-        原 CooccurrenceTypeExtractor 的"产 has_parameter/made_of 等 triple"已删除，
-        但实体收集副作用保留，否则 instance_of 召回会损失约 6%。
 """
 
 from __future__ import annotations

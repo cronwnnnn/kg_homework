@@ -1,18 +1,3 @@
-"""知识图谱浏览应用（Streamlit + pyvis）。
-
-功能：
-    1. 多文件源切换：默认 ``output/triples_with_meta.csv``，可手动切换其他三元组 CSV（如 gold/gold_triples_augmented.csv）。
-    2. 三类筛选：关系白名单、最小 score、最小 head/tail 长度。
-    3. 类型染色：节点按 entities_by_type.json 染色，未识别类型显示为浅灰。
-    4. 中心实体 BFS 子图：以选中实体为中心做 K 跳邻接。
-    5. 统计面板：实体数 / 三元组数 / 关系分布 / 来源分布。
-
-依赖（可选）：
-    uv sync --extra app
-
-运行：
-    uv run streamlit run app_streamlit.py
-"""
 
 from __future__ import annotations
 
