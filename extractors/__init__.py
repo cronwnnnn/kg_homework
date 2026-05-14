@@ -13,6 +13,7 @@ from .ner import HybridNER
 from .trigger_extractor import TriggerCooccurrenceExtractor
 from .pattern_extractor import PatternExtractor
 from .svo_extractor import DependencyExtractor
+from .dependency_re import DependencyREExtractor
 from .numeric_extractor import NumericExtractor
 from .relation_normalizer import RelationNormalizer
 from .llm_enhancer import LLMEnhancer
@@ -28,6 +29,7 @@ __all__ = [
     "TriggerCooccurrenceExtractor",
     "PatternExtractor",
     "DependencyExtractor",
+    "DependencyREExtractor",
     "NumericExtractor",
     "RelationNormalizer",
     "LLMEnhancer",

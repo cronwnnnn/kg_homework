@@ -1,56 +1,58 @@
 ==== 抽取统计 ====
 段落数: 438
 句子数: 1042
-实体数: 670
-三元组数: 1584
+实体数: 401
+三元组数: 1114
 
 ---- 按来源 (合并后) ----
-  chapter: 474
-  type: 437
-  llm_discover: 290
-  trigger: 234
-  pattern: 89
-  numeric: 48
-  trigger+pattern: 6
-  trigger+pattern+pattern: 4
-  trigger+pattern+pattern+pattern: 1
-  trigger+llm_discover: 1
+  chapter: 443
+  type: 345
+  trigger: 168
+  pattern: 64
+  numeric: 44
+  dep: 39
+  trigger+pattern+pattern: 3
+  trigger+pattern: 3
+  trigger+dep: 3
+  trigger+pattern+pattern+pattern+pattern+pattern+pattern+dep: 1
+  pattern+dep: 1
 
 ---- 按关系类型 (Top-30) ----
-  discussed_in: 474
-  instance_of: 449
-  has_part: 132
-  has_value: 46
-  located_at: 40
-  generates: 38
-  uses_method: 36
-  has_performance: 28
-  has_parameter: 27
-  affects: 23
-  used_for: 22
-  needs: 21
-  reduces: 19
-  connected_to: 18
-  improves: 18
-  satisfies: 15
-  develops: 15
-  verifies: 14
-  causes: 14
-  controls: 13
-  drives: 11
-  manufactures: 11
-  transforms_to: 10
-  depends_on: 10
-  has_configuration: 9
-  is_a: 8
+  discussed_in: 443
+  instance_of: 345
+  has_value: 43
+  has_part: 33
+  uses_method: 27
+  located_at: 24
+  generates: 19
+  used_for: 18
+  controls: 15
+  improves: 14
+  needs: 14
+  connected_to: 13
+  develops: 12
+  reduces: 9
+  manufactures: 9
+  satisfies: 9
+  verifies: 9
+  depends_on: 8
+  drives: 7
   implements: 7
-  provides: 6
-  actuated_by: 5
-  developed_by: 5
+  transforms_to: 5
+  causes: 5
+  affects: 4
+  provides: 4
+  solves: 4
+  leads_to: 3
+  combines_with: 2
+  driven_by: 2
+  applied_to: 2
+  is_a: 1
 
 ---- 按来源 (合并前) ----
-  trigger: 950
-  chapter: 474
-  type: 437
-  pattern: 124
-  numeric: 57
+  trigger: 728
+  chapter: 443
+  type: 345
+  pattern: 93
+  numeric: 52
+  dep: 48

@@ -125,6 +125,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--input", default="aftcln.txt", help="输入论文文本路径")
     parser.add_argument("--llm", default=os.environ.get("KG_LLM_MODE", "mock"), choices=["mock", "openai"], help="LLM 模式")
     parser.add_argument("--enable-svo", action="store_true", help="启用 spaCy SVO 抽取（默认关闭：未装模型时无产出，装上后噪声较大）")
+    parser.add_argument("--no-dep-re", action="store_true", help="禁用依存增强抽取 (DependencyREExtractor)，默认开启")
     parser.add_argument("--no-llm", action="store_true", help="完全跳过 LLM 增强层")
     parser.add_argument("--max-window", type=int, default=30, help="触发词共现窗口大小")
     parser.add_argument("--min-score", type=float, default=0.30, help="触发词三元组最小置信度")
@@ -197,6 +198,7 @@ def main() -> int:
 
     config = PipelineConfig(
         use_svo=args.enable_svo,
+        use_dep_re=not args.no_dep_re,
         use_llm=not args.no_llm,
         llm_mode=args.llm,
         trigger_max_window=args.max_window,

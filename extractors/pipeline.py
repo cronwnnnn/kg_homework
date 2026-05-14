@@ -8,6 +8,7 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass
 from typing import Iterable, Sequence
 
+from .dependency_re import DependencyREExtractor
 from .llm_enhancer import LLMEnhancer
 from .ner import HybridNER
 from .numeric_extractor import NumericExtractor
@@ -25,6 +26,9 @@ class PipelineConfig:
     use_trigger: bool = True
     use_pattern: bool = True
     use_svo: bool = False  # 默认关闭：spaCy 模型未装时无产出；装上后噪声较大，无正向贡献
+    use_dep_re: bool = True  # 依存增强抽取（基于 spaCy 中文依存树），默认开启
+    dep_require_dict_head: bool = True   # dep 抽取要求 head 在 NER 词典内（默认开启，避免长 NP FP）
+    dep_require_dict_tail: bool = True   # dep 抽取要求 tail 在 NER 词典内或为数值（默认开启）
     use_numeric: bool = True
     use_type: bool = True
     use_chapter: bool = True
@@ -89,6 +93,14 @@ class ExtractionPipeline:
         self.pattern = PatternExtractor(self.ner)
         self.numeric = NumericExtractor(self.ner)
         self.svo = DependencyExtractor(self.ner, self.normalizer, spacy_model=self.config.spacy_model)
+        self.dep_re = DependencyREExtractor(
+            self.ner,
+            self.normalizer,
+            spacy_model=self.config.spacy_model,
+            min_score=self.config.trigger_min_score,
+            require_dict_head=self.config.dep_require_dict_head,
+            require_dict_tail=self.config.dep_require_dict_tail,
+        )
         self.entities_by_type: dict[str, list[str]] = entities_by_type or {}
         self.type_ext = TypeBasedExtractor(self.entities_by_type) if self.entities_by_type else None
         self.chapter_ext = (
@@ -167,6 +179,13 @@ class ExtractionPipeline:
             per_source["svo"] = len(svo)
             if verbose:
                 print(f"[pipeline] svo 抽取: {len(svo)} 条")
+
+        if self.config.use_dep_re:
+            dep = self.dep_re.extract_from_sentences(sentences)
+            triples.extend(dep)
+            per_source["dep"] = len(dep)
+            if verbose:
+                print(f"[pipeline] dep 抽取: {len(dep)} 条")
 
         if self.config.use_chapter and self.chapter_ext is not None:
             ch = self.chapter_ext.extract_from_sentences(sentences)
